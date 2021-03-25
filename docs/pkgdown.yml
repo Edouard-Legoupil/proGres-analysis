@@ -1,0 +1,11 @@
+pandoc: 2.7.3
+pkgdown: 1.6.1
+pkgdown_sha: ~
+articles:
+  Profiling-Analysis: Profiling-Analysis.html
+  Report-Loop: Report-Loop.html
+  Report-Maps: Report-Maps.html
+  Report: Report.html
+  Stratification-report-ProGres: Stratification-report-ProGres.html
+last_built: 2021-03-25T17:27Z
+
