@@ -1,32 +1,47 @@
-Package: proGresAnalysis
 Type: Package
+Package: proGresAnalysis
 Title: In-depth exploration to UNHCR Refugee Registration database
 Version: 0.1.0
-Author: Edouard Legoupil 
+Author: Edouard Legoupil
 Maintainer: Edouard Legoupil <legoupil@unhcr.org>
-Description: A series of function and vignette for in-depth analysis of UNHCR Registration database
+Description: A series of functions and a powerpoint report template for
+    in-depth analysis of UNHCR Registration database
 License: GPL-3
+URL: https://github.com/edouard-legoupil/proGres-analysis
+BugReports: https://github.com/edouard-legoupil/proGres-analysis/issues
+Imports: 
+    broom.helpers,
+    corrr,
+    dplyr,
+    factoextra,
+    FactoMineR,
+    forcats,
+    ggcorrplot,
+    ggplot2,
+    ggtext,
+    here,
+    idbr,
+    janitor,
+    lubridate,
+    MASS,
+    patchwork,
+    plyr,
+    popdata,
+    readr,
+    readxl,
+    ridl,
+    scales,
+    stringr,
+    tidyr,
+    tidyverse,
+    unhcrdatapackage,
+    unhcrthemes,
+    wbstats
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: 
+    knitr
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
-Imports: 
-    httr,
-    jsonlite,
-    magrittr,
-    purrr,
-    tibble,
-    fs,
-    dplyr,
-    tidyr,
-    stringr,
-    rvest,
-    rappdirs,
-    readr,
-    shiny,
-    shinyjs,
-    miniUI,
-    rstudioapi,
-    glue,
-    here
-URL: https://github.com/unhcr-americas/proGres-analysis
-BugReports: https://github.com/unhcr-americas/proGres-analysis/issues
+RoxygenNote: 7.2.0

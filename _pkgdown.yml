@@ -1,0 +1,32 @@
+url: ~
+template:
+  package: unhcrtemplate
+  bootstrap: 5
+
+navbar:
+  title: proGresAnalysis
+  left:
+  - text: "Analysing Registration data"
+    menu:
+     - text: Why a chart library?
+       href: articles/library.html
+     - text: Chart library directory
+       href: articles/chart-library.html
+  - text: Country Focus
+    href: CountryFocus.html
+  - text: News
+    href: news/index.html
+  - text: Reference
+    href: reference/index.html
+
+reference:
+- contents:
+  - starts_with("plot_reach")
+- title: Chart for Region
+  desc: Charts adressing questions at regional or multicountry-level level
+- contents:
+  - starts_with("plot_reg_")
+- title: Report Template
+  desc: Prebuild Report template to explore, interpret & Disseminate
+  contents:
+  - starts_with("template_")

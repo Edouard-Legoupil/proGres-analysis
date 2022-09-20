@@ -1,0 +1,2865 @@
+---
+title: "Registration Data for Situation Analysis - Initial Data Crunching"
+date: " `r format(Sys.Date(),  '%d %B %Y')`"
+output:
+  unhcrdown::pptx_slides
+params:
+  ridl: "mex-registration-data-2022-09"
+  country: "Mexico"
+author: "`r params$ridl`"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      collapse = FALSE,
+                      comment = "#>",
+                      # fig.width = 5.5, fig.height = 4,
+                      #fig.retina = 2, 
+                     # fig.width = 9,
+                     # fig.asp = 0.618,
+                     # fig.align = "center",
+                     # dev = "ragg_png",
+                     # out.width = "90%", 
+                      fig.cap = TRUE
+                     )
+options(scipen = 999) # turn-off scientific notation like 1e+48
+set.seed(1)
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
+
+library(officedown)
+library(unhcrthemes)
+library(ggplot2)
+library(rvg)
+library(tidyverse)
+library(scales)
+library(lubridate)
+library(ggfittext)
+library(ggrepel)
+library(gridExtra)
+library(stringr) 
+library(ckanr)
+library(fs)
+library(patchwork)
+
+ ## Multiple correspondance analysis and classification
+library(FactoMineR)
+library(factoextra)
+#library(corrr)
+#library(igraph)
+#library(ggraph)
+library(MASS)
+
+#library(hcrdata)
+library(broom.helpers)
+
+#install.packages("SocialPosition")
+#library(SocialPosition)
+```
+
+```{r  }
+## The 2 lines below are for the demo - please comment the 2 below 
+
+ctr <- params$country
+ridl  <- params$ridl 
+```
+
+
+```{r loaddataprimes, include=FALSE}
+
+## get path - assuming this Rmd is located in a a standard `vignettes` within your Rstudio project
+#mainDir <- getwd()
+#mainDirroot <- substring(mainDir, 0 , nchar(mainDir) - 10)
+
+## load all data from RIDL assuming they are located in a  `data-raw` within your Rstudio project
+#Individual <- readr::read_csv(paste0(mainDirroot,"/data-raw/", ctr,"/Individual.csv")) 
+Individual <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Individual.csv")) 
+
+RegistrationGroup <- readr::read_csv(here::here(paste0("data-raw/", ctr),"RegistrationGroup.csv")) 
+
+Address <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Address.csv"), progress = TRUE) 
+
+#Assistance <- utils::read.csv(paste0(mainDirroot,"/data-raw/", ctr,"/Assistance.csv"), encoding = "UTF-8", na.strings = "") 
+Assistance <- utils::read.csv(here::here(paste0("data-raw/", ctr),"Assistance.csv")) 
+
+Document <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Document.csv")) 
+
+Education <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Education.csv")) 
+
+EntitlementCard <- readr::read_csv(here::here(paste0("data-raw/", ctr),"EntitlementCard.csv")) 
+
+IndividualProperty <- readr::read_csv(here::here(paste0("data-raw/", ctr),"IndividualProperty.csv")) 
+
+Language <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Language.csv")) 
+
+Nationality <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Nationality.csv")) 
+
+Relative <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Relative.csv")) 
+
+Representative <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Representative.csv")) 
+
+Skill <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Skill.csv")) 
+
+SocioEconomic <- readr::read_csv(here::here(paste0("data-raw/", ctr),"SocioEconomic.csv")) 
+
+SpecificNeed <- readr::read_csv(here::here(paste0("data-raw/", ctr),"SpecificNeed.csv")) 
+#SpecificNeed <- utils::read.csv(paste0(mainDirroot,"/data-raw/", ctr,"/SpecificNeed.csv"), encoding = "UTF-8", na.strings = "") 
+
+Transit <- readr::read_csv(here::here(paste0("data-raw/", ctr),"Transit.csv")) 
+
+WorkExperience <- readr::read_csv(here::here(paste0("data-raw/", ctr),"WorkExperience.csv"), 
+    ## some encoding issue to addres... it's not expected UTF-8..
+    locale = locale(encoding = "UTF-16"))
+
+```
+
+#  Introduction
+
+ *  This presentation includes a series of crafted charts generated from PRIMES data recorded in [RIDL](http://ridl.unhcr.org), linked when possible with other __baseline data__ (National Statistics, SDG..).  
+
+ *  It can be used during __Joint Data Interpretation Sessions__ to generate Insights with the view of building data stories 
+
+ *  The resulting __data stories charts__ can then be used in the context of Situation Analysis or Protection Analysis (_for Protection Monitoring Reports_) and directly copied as an image within reports, fact-sheet or social medias.
+
+ *  The present initial Exploration can also help to __identify data issues__ potentially relevant to document for analysis (_data quality, SOP gaps, etc._)
+
+---
+
+#  Technical details
+
+ *  This presentation  is created through an [Rmd notebook](https://rmarkdown.rstudio.com/) and implement per default [unhcRstyle](https://unhcr-web.github.io/unhcRstyle/docs/).
+
+ *  Having data in RIDL an analysis performed with __R language__ ensures full [analysis reproducibility](https://unhcr-americas.github.io/reproducibility) and allows to enforce a first level of anonymization before analysis is performed. The same notebook can be used and re-used with any standard PRIMES recorded in RIDL. The notebook also introduces advanced __statistical analysis techniques__ such as clustering or regression analysis.
+
+ *  Data experts in each country are encourage to access the source notebook and __annotate each chart__ in order to stimulate the data interpretation discussion. In order to position your annotation within the charts, use `ggannotate::ggannotate()`
+
+ *  Please contact [DIMA Americas / Data Analysis](mailto:legoupil@unhcr.org) if you identify issues or have __suggestions to improve the notebook__ and make those improvements available for everyone.
+
+---
+
+```{r IndIndicatorIndividual }
+## This chunk is to rework variables so that we aggregate modalities with low frequencies together
+## Categorise main Nationality 
+Individual <- Individual %>%
+  dplyr::mutate(CountryOfOriginCat = forcats::fct_lump_prop(CountryOfOrigin, prop = .1))
+## Legal Status 
+# table(Individual$LegalStatus, useNA = "ifany" )
+Individual <- Individual %>%
+# Lump together factor levels into "other" if less than 10% of frequency
+  dplyr::mutate(LegalStatusCat = forcats::fct_lump_prop(LegalStatus, prop = .1))
+#table(Individual$LegalStatusCat, useNA = "ifany" ) 
+
+## Legal Status combined with registration reason
+Individual <- Individual %>%
+  # Lump together factor levels into "other" if less than 10% of frequency
+  dplyr::mutate(
+    LegalStatusCont =   paste0(LegalStatus,
+                               dplyr::if_else( is.na(RefugeeStatusCategory),
+                                        paste0(""),
+                                        paste0("-", RefugeeStatusCategory)),
+                               dplyr::if_else( is.na(RegistrationReason),
+                                        paste0(""),
+                                        paste0("-", RegistrationReason)) ),
+    LegalStatusCat2 = forcats::fct_lump_prop( LegalStatusCont, prop = .01))
+#table(Individual$LegalStatusCont, useNA = "ifany" ) 
+#table(Individual$LegalStatusCat2, useNA = "ifany" ) 
+
+
+## Marrital Status 
+#levels(as.factor(Individual$MaritalStatus))
+#table(Individual$MaritalStatus , useNA = "ifany" )
+Individual <- Individual %>%
+  dplyr::mutate(MaritalStatusCat = dplyr::case_when(
+    MaritalStatus == "Common Law Married" ~ "Married-Engaged",
+    MaritalStatus == "Married" ~ "Married-Engaged",
+    MaritalStatus == "Engaged" ~ "Married-Engaged",
+    MaritalStatus == "Partnership" ~ "Married-Engaged",
+    MaritalStatus == "Single" & Age >= 18 ~ "Single_Adult",
+    MaritalStatus == "Single"& Age < 18 ~ "Single_Minor",
+    MaritalStatus == "Separated" ~ "Divorced-Separated-Widow",
+    MaritalStatus == "Divorced" ~ "Divorced-Separated-Widow",
+    MaritalStatus == "Widowed" ~ "Divorced-Separated-Widow",
+    MaritalStatus == "Unknown" ~ "Unknown",
+    is.na(MaritalStatus)  ~ "Unknown" )) 
+
+# table(Individual$MaritalStatusCat , useNA = "ifany" )
+# View(Individual[is.na(Individual$MaritalStatusCat) , c("MaritalStatus", "MaritalStatusCat")] )
+
+## Linsk in Group
+#levels(as.factor(Individual$RelationshipToFP  ))
+#table(Individual$RelationshipToFP , useNA = "ifany" )
+Individual <- Individual %>%
+  dplyr::mutate(RelationshipToFPCat = forcats::fct_lump_prop( RelationshipToFP, prop = .005)) 
+
+#table(Individual$RelationshipToFPCat , useNA = "ifany" )
+#View(Individual[is.na(Individual$RelationshipToFPCat) , c("RelationshipToFPCat", "RelationshipToFP")] )
+
+Individual <- Individual %>%
+  dplyr::mutate(RelationshipToFPCat2 = dplyr::case_when(
+    RelationshipToFP == "Focal Point" ~ "Focal Point", 
+    RelationshipToFP == "Husband" ~ "Partner", 
+    RelationshipToFP == "Wife" ~ "Partner", 
+    RelationshipToFP == "Partner (Female)" ~ "Partner", 
+    RelationshipToFP == "Partner (Male)" ~ "Partner", 
+    RelationshipToFP == "Common Law Husband" ~ "Partner", 
+    RelationshipToFP == "Common Law Wife" ~ "Partner", 
+    
+    RelationshipToFP == "Son" ~ "Family Line", 
+    RelationshipToFP == "Daughter" ~ "Family Line", 
+    RelationshipToFP == "Grandfather" ~ "Family Line", 
+    RelationshipToFP == "Grandmother" ~ "Family Line", 
+    RelationshipToFP == "Grandson" ~ "Family Line", 
+    RelationshipToFP == "Granddaughter" ~ "Family Line", 
+    RelationshipToFP == "Mother" ~ "Family Line", 
+    RelationshipToFP == "Father" ~ "Family Line", 
+    
+    RelationshipToFP == "Aunt" ~ "Extended",  
+    RelationshipToFP == "Uncle" ~ "Extended", 
+    RelationshipToFP == "Brother" ~ "Extended", 
+    RelationshipToFP == "Sister" ~ "Extended", 
+    RelationshipToFP == "Cousin (female)" ~ "Extended", 
+    RelationshipToFP == "Cousin (male)" ~ "Extended", 
+    RelationshipToFP == "Ex-husband" ~ "Extended", 
+    RelationshipToFP == "Foster daughter" ~ "Extended", 
+    RelationshipToFP == "Foster father" ~ "Extended", 
+    RelationshipToFP == "Foster mother" ~ "Extended", 
+    RelationshipToFP == "Foster son" ~ "Extended", 
+    RelationshipToFP == "Half-brother" ~ "Extended", 
+    RelationshipToFP == "Half-sister" ~ "Extended",  
+    RelationshipToFP == "Nephew" ~ "Extended", 
+    RelationshipToFP == "Niece" ~ "Extended", 
+    RelationshipToFP == "Other blood relation (female)" ~ "Extended", 
+    RelationshipToFP == "Other blood relation (male)" ~ "Extended",
+    
+    
+    RelationshipToFP == "In Law - Brother" ~ "Extended", 
+    RelationshipToFP == "In Law - Sister" ~ "Extended", 
+    RelationshipToFP == "In-Law - Daughter" ~ "Extended", 
+    RelationshipToFP == "In-Law - Father" ~ "Extended", 
+    RelationshipToFP == "In-Law - Mother" ~ "Extended", 
+    RelationshipToFP == "In-Law - Son" ~ "Extended", 
+    RelationshipToFP == "In-Law (female)" ~ "Extended", 
+    RelationshipToFP == "In-Law (male)" ~ "Extended",
+    
+    RelationshipToFP == "Step-brother" ~ "Extended", 
+    RelationshipToFP == "Step-daughter"  ~ "Extended", 
+    RelationshipToFP == "Step-father" ~ "Extended", 
+    RelationshipToFP == "Step-mother" ~ "Extended", 
+    RelationshipToFP == "Step-sister" ~ "Extended", 
+    RelationshipToFP == "Step-son" ~ "Extended", 
+    
+    RelationshipToFP == "No blood relation (female)" ~ "Other", 
+    RelationshipToFP == "No blood relation (male)" ~ "Other", 
+    RelationshipToFP == "Not specified/unknown (female)" ~ "Other", 
+    RelationshipToFP == "Not specified/unknown (male)" ~ "Other", 
+    is.na(RelationshipToFP)  ~ "Other" )) 
+#table(Individual$RelationshipToFPCat2 , useNA = "ifany" ) 
+
+## year of arrival - grouping together pre-2017
+Individual <- Individual %>%
+  dplyr::mutate( ArrivalYear = lubridate::year(lubridate::as_date(ArrivalDate)),
+                 ArrivalYear2 = cut(ArrivalYear, 
+                                    breaks = c(0,2017,2018,2019,2020,2021,2022),
+                                    labels = c("Arrived in 2017 and before",
+                                               "Arrived in 2018",
+                                               "Arrived in 2019", 
+                                               "Arrived in 2020", 
+                                               "Arrived in 2021",
+                                               "Arrived in 2022"))) 
+
+#table(Individual$ArrivalYear , useNA = "ifany" )
+#table(Individual$ArrivalYear2 , useNA = "ifany" )
+```
+
+```{r IndVarEdu}
+
+
+## Adjust Education Level
+Individual <- Individual %>%
+  dplyr::left_join(Education %>%
+                     dplyr::mutate(ModifiedOnEd = ModifiedOn) %>%
+                     dplyr::select(IndividualID, Level, Ranking,ModifiedOnEd) ,
+                   by = c("IndividualID")) %>% 
+  dplyr::arrange(desc(ModifiedOnEd)) %>% 
+  dplyr::filter(!duplicated(IndividualID, fromLast = FALSE)) %>% 
+  dplyr::mutate(EducationLevelCat = dplyr::case_when(
+    Level == "Informal education" ~ "Other",
+    Level == "Technical or vocational" ~ "Other",
+    Level == "No education" ~ "Up to Grade 5",
+    Level == "Kindergarten" ~ "Up to Grade 5",
+    Level == "1 year (or Grade 1)" ~ "Up to Grade 5",
+    Level == "2 years (or Grade 2)" ~ "Up to Grade 5",
+    Level == "3 years (or Grade 3)" ~ "Up to Grade 5",
+    Level == "4 years (or Grade 4)" ~ "Up to Grade 5",
+    Level == "5 years (or Grade 5)" ~ "Up to Grade 5",
+    Level == "6 years (or Grade 6)" ~ "Grade 6-8",
+    Level == "7 years (or Grade 7)" ~ "Grade 6-8",
+    Level == "8 years (or Grade 8)" ~ "Grade 6-8",
+    Level == "9 years (or Grade 9)" ~ "Grade 9-11",
+    Level == "10 years (or Grade 10)" ~ "Grade 9-11",
+    Level == "11 years (or Grade 11)" ~ "Grade 9-11",
+    Level == "12 years (or Grade 12)" ~ "Grade 12-14",
+    Level == "13 years (or Grade 13)" ~ "Grade 12-14",
+    Level == "14 years (or Grade 14)" ~ "Grade 12-14",
+    Level == "University level" ~ "Higher Education",
+    Level == "Post university level" ~ "Higher Education",
+    Level == "Unknown" ~ "Unknown",
+    is.na(Level) ~ "Unknown"))  %>%    
+
+#table(Individual$EducationLevelCat, useNA = "ifany")
+# SE.PRE.ENRR School enrollment, preprimary (% gross)
+# SE.PRM.ENRR School enrollment, primary (% gross)
+# SE.SEC.ENRR School enrollment, secondary (% gross)
+# SE.TER.ENRR School enrollment, tertiary (% gross)
+
+# Individual <- Individual %>%
+# 
+#   dplyr::left_join(Education %>%
+#                      dplyr::mutate(ModifiedOnEd = ModifiedOn) %>%
+#                      dplyr::select(IndividualID, Level, Ranking,ModifiedOnEd) ,
+#                    by = c("IndividualID")) %>% 
+#   dplyr::arrange(desc(ModifiedOnEd)) %>% 
+#   dplyr::filter(!duplicated(IndividualID, fromLast = FALSE)) %>%   
+  # Education Enroll Level #####
+  dplyr::mutate(EducationEnroll = dplyr::case_when(
+     Level == "Kindergarten" ~ "is.in.preprimary",
+     Level %in% c(  "1 year (or Grade 1)",
+                              "2 years (or Grade 2)",
+                              "3 years (or Grade 3)",
+                              "4 years (or Grade 4)", 
+                              "5 years (or Grade 5)") ~ "is.in.primary",
+     Level %in% c( "6 years (or Grade 6)",
+                             "7 years (or Grade 7)" ,
+                             "8 years (or Grade 8)",
+                             "9 years (or Grade 9)",
+                             "10 years (or Grade 10)",
+                             "11 years (or Grade 11)",
+                             "12 years (or Grade 12)",
+                             "13 years (or Grade 13)",
+                             "14 years (or Grade 14)") ~ "is.in.secondary",
+     Level %in% c( "University level",
+                             "Post university level") ~ "is.in.tertiary" ))  %>%
+  
+  # EducationEnroll Should #####    
+  dplyr::mutate(EducationEnrollShould = dplyr::case_when(
+    Age >=3 & Age <6   ~ "should.be.in.preprimary",
+    Age >=6 &   Age <11    ~ "should.be.in.primary",
+    Age >=11 &   Age <20    ~ "should.be.in.secondary",
+    Age >=20 &   Age < 24   ~ "should.be.in.tertiary" )) %>%
+  
+  # Education Enroll atRightAge #####  
+  dplyr::mutate(EducationEnrollatRightAge = dplyr::case_when(
+    Age >=3 & Age <6 & 
+      Level == "Kindergarten" ~ "yes",
+    Age >=6 &   Age <11  & 
+      Level %in% c(  "1 year (or Grade 1)",
+                            "2 years (or Grade 2)",
+                            "3 years (or Grade 3)",
+                            "4 years (or Grade 4)", 
+                            "5 years (or Grade 5)") ~ "yes",
+    Age >=11 &   Age <20  & 
+      Level %in% c( "6 years (or Grade 6)",
+                            "7 years (or Grade 7)" ,
+                            "8 years (or Grade 8)",
+                            "9 years (or Grade 9)",
+                            "10 years (or Grade 10)",
+                             "11 years (or Grade 11)",
+                             "12 years (or Grade 12)",
+                             "13 years (or Grade 13)",
+                             "14 years (or Grade 14)") ~ "yes",
+    Age >=20 &   Age < 24 & 
+      Level %in% c( "University level",
+                             "Post university level") ~ "yes" ))  %>%
+  
+  dplyr::mutate(EducationEnrollatRightAge = dplyr::if_else(
+    is.na(EducationEnrollatRightAge) ,paste0("no"),  EducationEnrollatRightAge )) %>%
+
+# View(Individual[ !(is.na(Individual$EducationEnrollShould)) ,
+#                  c("Age",  "EducationEnroll", 
+#                     "EducationEnrollShould", 
+#                     "EducationEnrollatRightAge"#, 
+#                     # "EducationEnrollGross", 
+#                     #"EducationEnrollNet"
+#                    )])
+# 
+# table(Individual$EducationEnroll , useNA = "ifany")
+# table(Individual$EducationEnrollatRightAge , useNA = "ifany")
+# table(Individual$EducationEnrollShould, useNA = "ifany")
+# table(Individual$EducationEnrollatRightAge, Individual$EducationEnrollShould, useNA = "ifany")
+# table(Individual$EducationEnroll, Individual$EducationEnrollShould, useNA = "ifany")
+
+# SE.PRM.CUAT.ZS Educational attainment, at least completed primary, population 25+ years, total (%) (cumulative)
+# SE.SEC.CUAT.LO.ZS Educational attainment, at least completed lower secondary, population 25+, total (%) (cumulative)
+# SE.SEC.CUAT.UP.ZS Educational attainment, at least completed upper secondary, population 25+, total (%) (cumulative)
+# SE.SEC.CUAT.PO.ZS Educational attainment, at least completed post-secondary, population 25+, total (%) (cumulative) 
+# SE.TER.CUAT.DO.ZS Educational attainment, Doctoral or equivalent, population 25+, total(%) (cumulative)
+
+# SE.TER.CUAT.ST.ZS Educational attainment, at least completed short-cycle tertiary, population 25+,total (%) (cumulative)
+# SE.TER.CUAT.BA.ZS Educational attainment, at least Bachelor's or equivalent, population 25+, total (%) (cumulative)
+# SE.TER.CUAT.MS.ZS Educational attainment, at least Master's or equivalent, population 25+, total (%) (cumulative)
+#Individual <- Individual %>%
+  dplyr::mutate(EducationAttainment = dplyr::case_when(
+    Level == "Informal education" ~ "Not Measured",
+    Level == "Technical or vocational" ~ "Not Measured",
+    Level == "No education" ~ "Not Measured",
+    Level == "Kindergarten" ~ "Not Measured",
+    Level == "1 year (or Grade 1)" ~ "PRM",
+    Level == "2 years (or Grade 2)" ~ "PRM",
+    Level == "3 years (or Grade 3)" ~ "PRM",
+    Level == "4 years (or Grade 4)" ~ "PRM",
+    Level == "5 years (or Grade 5)" ~ "PRM",  
+    Level == "6 years (or Grade 6)" ~ "SEC.LO",
+    Level == "7 years (or Grade 7)" ~ "SEC.LO",
+    Level == "8 years (or Grade 8)" ~ "SEC.LO",
+    Level == "9 years (or Grade 9)" ~ "SEC.LO",
+    Level == "10 years (or Grade 10)" ~ "SEC.UP",
+    Level == "11 years (or Grade 11)" ~ "SEC.UP",
+    Level == "12 years (or Grade 12)" ~ "SEC.UP",
+    Level == "13 years (or Grade 13)" ~ "SEC.UP",
+    Level == "14 years (or Grade 14)" ~ "SEC.UP",
+    Level == "University level" ~ "SEC.PO",
+    Level == "Post university level" ~ "TER.DO",
+    Level == "Unknown" ~ "Not Measured",
+    is.na(Level) ~ "Not Measured")) 
+#table(Individual$EducationAttainment, useNA = "ifany")
+
+Individual<- Individual %>%
+  dplyr::mutate(EducationAttainment = dplyr::if_else( Age <25,
+                                                      "Not Applicable",
+                                                      EducationAttainment ))
+
+# table(Individual$EducationAttainment, useNA = "ifany")
+
+
+
+
+```
+
+
+```{r indocc}
+## Occupation - https://ilostat.ilo.org/resources/concepts-and-definitions/description-employment-by-occupation/ 
+## EMP_TEMP_SEX_OC2_NB_A -->  ILOSTAt
+
+## Isco code to analyse workexperience
+# isco <- readr::read_csv(paste0(mainDirroot,"/data-raw/isco.csv")) 
+isco <- readxl::read_excel( here::here("data-raw","isco.xlsx"), sheet = "isco") %>%
+  dplyr::select( - isco_parent2, - isco_parent_name2, 
+                  - isco_parent3, - isco_parent_name3, 
+                  - level1dup, - level2dup, - level3dup )
+# names(isco)
+
+Individual <- Individual %>% 
+  dplyr::left_join(WorkExperience %>%
+                     dplyr::mutate(WorkExperienceAsy = WorkType) %>%
+                     dplyr::mutate(ModifiedOnWorkAsy = ModifiedOn)  %>% 
+                     dplyr::filter(CountryOfWork == ctr ) %>% 
+                     dplyr::arrange(desc(ModifiedOnWorkAsy)) %>% 
+                     dplyr::filter(!duplicated(IndividualID, fromLast = FALSE)) %>%
+                     dplyr::select(IndividualID, WorkExperienceAsy, 
+                                   #CountryOfWork,
+                                   ModifiedOnWorkAsy),
+                   by = c("IndividualID")) %>% 
+  dplyr::left_join(WorkExperience %>%
+                     dplyr::mutate(WorkExperience = WorkType) %>%
+                     dplyr::mutate(ModifiedOnWork = ModifiedOn)  %>% 
+                     dplyr::filter(CountryOfWork != ctr ) %>% 
+                     dplyr::arrange(desc(ModifiedOnWork)) %>% 
+                     dplyr::filter(!duplicated(IndividualID, fromLast = FALSE)) %>%
+                     dplyr::select(IndividualID, 
+                                   WorkExperience, 
+                                   CountryOfWork,
+                                   ModifiedOnWork),
+                   by = c("IndividualID"))   %>% 
+
+#Individual <- Individual %>% 
+  dplyr::left_join(isco, 
+                    by = c("WorkExperience" = "isco_name"))  %>% 
+  dplyr::left_join(isco, 
+                    by = c("WorkExperienceAsy" = "isco_name"))  %>% 
+  dplyr::mutate( Lskill = max(LSkill.x, LSkill.y),
+                 isei = max(isei.x,isei.y),
+                 siops = max(siops.x, siops.y),
+                 isco_parent1 = max(isco_parent1.x, isco_parent1.y) )
+
+
+```
+
+
+
+```{r SpNeed}
+SpecificNeed <- SpecificNeed %>% 
+  dplyr::mutate( SpecificNeedSub = paste0( SPNCategory,
+                                  if_else( is.na(`SPNSub-Category`),
+                                           paste0(""),
+                                           paste0("- ", `SPNSub-Category`))))
+
+```
+
+```{r IndIndicatorAssistance}
+
+## Filter Assistance type
+
+Assistance <-  Assistance %>%
+  dplyr::mutate( AssistanceSub = paste0( AssistanceType,
+                                          dplyr::if_else( is.na(`AssistanceSub.Type`),
+                                                          paste0(""),
+                                                          paste0("-", `AssistanceSub.Type`)),
+                                          dplyr::if_else( is.na(`AssistanceSub.Sub.Type`),
+                                                                   paste0(""),
+                                                                   paste0("- ", `AssistanceSub.Sub.Type`)) ))%>%
+  dplyr::mutate( AssistanceCash =  dplyr::if_else( stringr::str_detect(AssistanceSub,  "cash" ),
+                                                          TRUE,
+                                                          FALSE))  %>%
+  dplyr::mutate( AssistanceCash =  dplyr::if_else( stringr::str_detect(AssistanceSub,   "Cash") ,
+                                                    TRUE,
+                                                    FALSE))  %>%
+  dplyr::mutate( AssistanceWASH =  dplyr::if_else( stringr::str_detect(AssistanceSub,  "WASH" ),
+                                                    TRUE,
+                                                    FALSE))  %>%
+  dplyr::mutate( AssistanceShelter =  dplyr::if_else( stringr::str_detect(AssistanceSub,   "Shelter") ,
+                                                    TRUE,
+                                                    FALSE))   %>% 
+ dplyr::mutate( AssistanceYear = lubridate::year(lubridate::as_date(ActualStartDate))  )
+ 
+
+# table(Asstype$AssistanceSub, useNA = "ifany")
+# table(Asstype$AssistanceCash, useNA = "ifany")
+# table(Asstype$AssistanceWASH, useNA = "ifany")
+# table(Asstype$AssistanceShelter, useNA = "ifany")
+# levels(as.factor(Assistance$AssistanceType))
+
+```
+
+```{r aggregateAtCaseLevel, message=FALSE, warning=FALSE}
+
+## variables are then aggregated to Registration Case level which is the main unit of analysis
+## Aggregate key information at case level #####
+RegistrationGroupall <- RegistrationGroup %>% 
+  
+  
+  ## Add gender, age group of representative #######
+dplyr::left_join(Individual %>% 
+                   dplyr::filter(RelationshipToFP == "Focal Point")   %>%
+                   dplyr::select(RegistrationGroupID, Age, Sex) %>%
+                   dplyr::mutate( AgeFP = Age,
+                                  SexFP = Sex) %>%
+                   dplyr::select(-Age, -Sex)    , # %>%
+                 by = c("RegistrationGroupID")) %>%
+  
+  dplyr::filter(!(is.na(SexFP)) ) %>%
+  ## Case when there's no Focal Point
+  # #   table(RegistrationGroupall$SexFP, useNA = "ifany")
+  # View( Individual %>%
+  #         dplyr::inner_join(RegistrationGroupall %>%
+  #                            dplyr::filter(is.na(SexFP))%>%
+  #                          dplyr::select(RegistrationGroupID),                          , 
+  #                          by = c("RegistrationGroupID")) )
+  
+  
+  ##  WorkExperience skill level #######
+# dplyr::left_join(Individual %>% 
+#                    dplyr::group_by( RegistrationGroupID ) %>%
+#                    dplyr::summarise ( 
+#                      EducRankMax = max(Ranking),
+#                      OccupMaxSkill = max(Lskill),
+#                      OccupMaxisei = max(isei),
+#                      OccupMaxsiops = max(siops),
+#                      OccupMaxisco_parent1 = max(isco_parent1)
+#                    ),
+#                  by = c("RegistrationGroupID")) %>%
+  
+  
+  ## Case Size #####
+dplyr::mutate(GroupSize1 = cut(GroupSize, 
+                               breaks = c(0,1,2,3,4,5, 60),
+                               labels = c("Size1", "Size2", "Size3",
+                                          "Size4", "Size5", "Size6+"))) %>%
+  
+  
+  ## Add HH Ratio Dependency, , average & standard deviation age ..  ####
+dplyr::left_join(Individual %>% 
+                   dplyr::group_by( RegistrationGroupID    ) %>%
+                   dplyr::summarise ( totalInd = dplyr::n(),
+                                      totalF =  sum(Sex == "Female"),
+                                      totalWorkingAge =  sum(Age >=15 & Age < 60),
+                                      totalYouth =  sum(Age <15  ),
+                                      totalEldern =  sum(Age > 60) ,
+                                      ageAvg = mean(Age),
+                                      ageSd = sd(Age) ),
+                 by = c("RegistrationGroupID")) %>%
+  
+  ## Remove records with no match case t Ind
+  dplyr::filter(!(is.na(totalInd))) %>%
+  
+  ## Discretise Average & SD for age
+  # table(RegistrationGroupall$ageAvg, useNA= "ifany") hist(RegistrationGroupall$ageAvg)
+  dplyr::mutate(ageAvgCat = dplyr::case_when(
+    ageAvg <= 18   ~ "below.18", 
+    ageAvg > 18 & ageAvg <= 35  ~ "between.19.35",
+    ageAvg > 35 & ageAvg <= 59  ~ "between.36.59",
+    ageAvg > 59 ~ "over.60")) %>%
+  dplyr::mutate(ageAvgCat = factor(ageAvgCat, 
+                                   levels = c("below.18", "between.19.35", "between.36.59", 
+                                              "over.60"))) %>%
+  # table(RegistrationGroupall$ageAvgCat, useNA= "ifany")
+  
+  # table(RegistrationGroupall$ageSd, useNA= "ifany") hist(RegistrationGroupall$ageSd)
+  dplyr::mutate(ageSdCat = dplyr::case_when(
+    is.na(ageSd) ~ "unique",  
+    ageSd <= 5   ~ "below.5",  
+    ageSd > 5 & ageSd <= 10  ~ "between.6.10",
+    ageSd > 10 & ageSd <= 20  ~ "between.11.20",
+    ageSd > 20 ~ "over.21")) %>%
+  dplyr::mutate(ageSdCat = factor(ageSdCat, 
+                                  levels = c("unique","below.5", "between.6.10", "between.11.20", 
+                                             "over.21"))) %>%
+  # table(RegistrationGroupall$ageSdCat, useNA= "ifany")
+  
+  #table(RegistrationGroupall$ratio_f, useNA= "ifany") hist(RegistrationGroupall$ratio_f)
+  dplyr::mutate ( ratioFemale = totalF/ totalInd ) %>%
+  dplyr::mutate(ratioFemaleCat = dplyr::case_when(
+    ratioFemale == 0 ~ "no.female", 
+    ratioFemale > 0 & ratioFemale < 0.5  ~ "few.female",
+    ratioFemale == 0.5 ~ "half.female",
+    ratioFemale > 0.5 & ratioFemale < 1  ~ "majority.female",
+    ratioFemale == 1 ~ "all.female")) %>%
+  dplyr::mutate(ratioFemaleCat = factor(ratioFemaleCat, 
+                                        levels = c("no.female", "few.female", "half.female", 
+                                                   "majority.female", "all.female"))) %>%
+  
+  dplyr::mutate ( ratioDependant = totalWorkingAge / totalInd ) %>%
+  dplyr::mutate(ratioDependantCat = dplyr::case_when(
+    ratioDependant == 0 ~ "all.dependant", 
+    ratioDependant > 0 & ratioDependant < 0.5  ~ "few.dependant",
+    ratioDependant == 0.5 ~ "half.dependant",
+    ratioDependant > 0.5 & ratioDependant < 1  ~ "majority.dependant",
+    ratioDependant == 1 ~ "no.dependant")) %>%
+  dplyr::mutate(ratioDependantCat = factor(ratioDependantCat, 
+                                           levels = c("no.dependant", "few.dependant", "half.dependant",
+                                                      "majority.dependant", "all.dependant"))) %>%
+  
+  # table(RegistrationGroupall$ratioDependantCat, useNA= "ifany")
+  # View(RegistrationGroupall[ is.na(RegistrationGroupall$ratioDependantCat), ])
+  
+  dplyr::mutate ( ratioYouth = totalYouth/ totalInd ) %>%
+  dplyr::mutate(ratioYouthCat = dplyr::case_when(
+    ratioYouth == 0 ~ "no.youth", 
+    ratioYouth > 0 & ratioYouth < 0.5  ~ "few.youth",
+    ratioYouth == 0.5 ~ "half.youth",
+    ratioYouth > 0.5 & ratioYouth < 1  ~ "majority.youth",
+    ratioYouth == 1 ~ "all.youth")) %>%
+  dplyr::mutate(ratioYouthCat = factor(ratioYouthCat, 
+                                       levels = c("no.youth", "few.youth", "half.youth", 
+                                                  "majority.youth", "all.youth"))) %>%
+  
+  
+  dplyr::mutate ( ratioEldern = totalEldern/ totalInd ) %>%
+  dplyr::mutate(ratioEldernCat = dplyr::case_when(
+    ratioEldern == 0 ~ "no.eldern", 
+    ratioEldern > 0 & ratioEldern < 0.5  ~ "few.eldern",
+    ratioEldern == 0.5 ~ "half.eldern",
+    ratioEldern > 0.5 & ratioEldern < 1  ~ "majority.eldern",
+    ratioEldern == 1 ~ "all.eldern")) %>%
+  dplyr::mutate(ratioEldernCat = factor(ratioEldernCat, 
+                                        levels = c("no.eldern", "few.eldern", "half.eldern", 
+                                                   "majority.eldern", "all.eldern"))) %>%
+  
+  
+  
+  dplyr::select ( - ratioEldern)  %>%
+  dplyr::select ( - ratioYouth)  %>%
+  dplyr::select ( - ratioDependant)  %>%
+  dplyr::select ( - ageAvg)  %>%
+  dplyr::select ( - ageSd)  %>%
+  
+  
+  ## Add marital Status #######
+dplyr::left_join(Individual %>% 
+                   tidyr::pivot_wider(id_cols = c("RegistrationGroupID") ,
+                                      names_from = MaritalStatusCat,
+                                      values_from = "IndividualID",
+                                      values_fn =  length ),
+                 by = c("RegistrationGroupID")) %>%
+  
+  
+  ## Add aggregated spNeeds  #######
+dplyr::left_join(SpecificNeed %>% 
+                   dplyr::left_join( y = Individual,
+                                     by = c("IndividualID") ) %>% 
+                   dplyr::group_by( RegistrationGroupID, SPNCategory   ) %>% 
+                   dplyr::summarise(n = dplyr::n())  %>% 
+                   dplyr::filter( ! (is.na(RegistrationGroupID) ))  %>%
+                   tidyr::pivot_wider(names_from  = SPNCategory,
+                                      values_from = n) ,
+                 by = c("RegistrationGroupID")) %>%
+  
+  
+  ## Add count of needs within Case
+  dplyr::left_join(SpecificNeed %>% 
+                     dplyr::left_join( y = Individual,
+                                       by = c("IndividualID") ) %>% 
+                     dplyr::group_by( RegistrationGroupID   ) %>% 
+                     dplyr::summarise(countneed = dplyr::n()),
+                   by = c("RegistrationGroupID")) %>%
+  
+  ## Add Assistance Records #######
+dplyr::left_join(Assistance %>% 
+                   # filter( AssistanceYear == 2020) %>% 
+                   dplyr::left_join( y = Individual,
+                                     by = c("IndividualID", "RegistrationGroupID") ) %>% 
+                   dplyr::group_by( RegistrationGroupID, AssistanceCash   ) %>% 
+                   dplyr::summarise(n = dplyr::n()) %>% 
+                   filter( ! (is.na(RegistrationGroupID) ))  %>%
+                   tidyr::pivot_wider(names_from  = AssistanceCash,
+                                      names_glue = "{AssistanceCash}_{.value}",
+                                      values_from = n) %>%
+                   dplyr:: mutate( AssistanceCash =  dplyr::case_when(
+                     TRUE_n >= 0  & is.na(FALSE_n) ~ "All.case.get.cash",
+                     TRUE_n >= 0  & FALSE_n >= 0 ~ "Some.members.get.cash",
+                     is.na(TRUE_n) ~ "No.cash"))  %>%
+                   dplyr::select ( - TRUE_n)  %>%
+                   dplyr::select ( - FALSE_n)  ,
+                 by = c("RegistrationGroupID")) %>% 
+  
+  dplyr:: mutate( AssistanceCash2 =  dplyr::if_else( is.na(AssistanceCash),
+                                                     "No.cash",
+                                                     AssistanceCash))  %>%
+  dplyr:: mutate( AssistanceCashBol =  dplyr::if_else( AssistanceCash2 == "No.cash",
+                                                       FALSE,TRUE
+  )) %>% 
+  dplyr:: mutate( GotAssistance =  dplyr::if_else( is.na(AssistanceCash),
+                                                   FALSE,TRUE
+  )) %>%
+  dplyr::select ( - AssistanceCash) %>%
+  
+  # dplyr::left_join(Assistance %>% 
+  #                    # filter( AssistanceYear == 2020) %>% 
+  #                    dplyr::left_join( y = Individual) %>% 
+  #                    dplyr::group_by( RegistrationGroupID, AssistanceSub   ) %>% 
+  #                    dplyr::summarise(n = dplyr::n()) %>% 
+  #                    filter( ! (is.na(RegistrationGroupID) ))  %>%
+  #                    tidyr::pivot_wider(names_from  = AssistanceSub,
+  #                                       values_from = n)    )  %>% 
+  
+  #RegistrationGroupall1 <- RegistrationGroupall  %>% 
+# 
+#   library(dplyr)
+# library(tidyr)
+# df %>% mutate(val=1) %>% 
+#   pivot_wider(names_from = country,
+#               values_from = val) %>% 
+#   mutate(across(-RegistrationGroupID, ~replace_na(.x, 0))) %>%
+#   mutate(across(-RegistrationGroupID, ~ifelse(.x==1, TRUE,FALSE)))
+
+## Clean  that fame... ######
+## Replace NA by 0 
+  dplyr::select ( - OwningOffice)  %>%
+  dplyr::select ( - WillingToReturn)  %>%
+  dplyr::select ( - BusinessUnit)  %>%
+  dplyr::filter(!(is.na(GroupSize1))) %>% 
+
+    
+    
+  ## Some records have missing age info preventing ratio to be calculated
+  # table(RegistrationGroupall$ageAvgCat, useNA = "ifany")
+  # View(RegistrationGroupall[ is.na(RegistrationGroupall$ageAvgCat), ])
+  dplyr::filter(!(is.na(ageAvgCat))) %>%
+  
+  
+  replace(is.na(.), 0) %>%
+#RegistrationGroupall1 <- RegistrationGroupall %>% 
+  #  dplyr::mutate(dplyr::across(everything(), ~ replace_na(.x, 0))) %>%
+  dplyr::mutate(dplyr::across( where(is.integer), ~ dplyr::if_else( .x > 0 , TRUE,FALSE) ) ) %>%
+  
+  ## Clean variable name
+  janitor::clean_names()
+
+```
+
+```{r loaddatapopdta, include=FALSE}
+# popdata::pd_login()
+# demographics <- popdata::pd_asr("demographics", year = 2021)
+# write.csv(demographics, file =paste0(mainDirroot,"/data-raw/demogpopdata.csv"), row.names = FALSE)
+
+popdata <- readr::read_csv(here::here("data-raw", "demogpopdata.csv")) 
+
+## Filter popdata for the country report
+popdatactr <-   popdata  %>% 
+  as.data.frame() %>% 
+  #mutate( total = as.integer(total))  %>%
+  dplyr::left_join( y= unhcrdatapackage::reference, 
+                    by = c("asylum" = "UNHCRcode"))  %>%
+  dplyr::filter(ctryname  == ctr ) %>%
+  dplyr::select(ctryname , populationType, total) %>%
+  dplyr::group_by( ctryname, populationType  ) %>%
+  dplyr::summarise(totalasr = sum( total) )  %>%
+  mutate(LegalStatus = case_when(
+                 populationType == "ASY" ~ "Asylum Seeker",
+                 populationType == "HST" ~ "Not of concern", 
+                 populationType == "IDP" ~ "Internally displaced person",
+                 populationType == "OOC" ~ "Other of concern",
+                 populationType == "RDP" ~ "Returned IDP",
+                 populationType == "REF" ~ "Refugee",
+                 populationType == "RET" ~ "Returnee",
+                 populationType == "ROC" ~ "???",
+                 populationType == "STA" ~ "Stateless (non-refugee)",
+                 populationType == "VDA" ~ "Other of concern")) %>%
+  dplyr::select(LegalStatus, totalasr)  %>%
+  dplyr::group_by( LegalStatus ) %>%
+  dplyr::summarise(totalasr = sum( totalasr) )   
+
+
+```
+
+```{r getEducdata, cache=TRUE}
+## Education Enrollment - https://data.worldbank.org/indicator/
+
+# SE.PRE.ENRR School enrollment, preprimary (% gross)
+# SE.PRM.ENRR School enrollment, primary (% gross)
+# SE.SEC.ENRR School enrollment, secondary (% gross)
+# SE.TER.ENRR School enrollment, tertiary (% gross)
+ 
+# SE.PRM.NENR School enrollment, primary (% net)
+# SE.SEC.NENR School enrollment, secondary (% net) 
+
+# Gross enrollment ratio is the ratio of total enrollment, regardless of age, to the population of the age group that officially corresponds to the level of education shown. Primary education provides children with basic reading, writing, and mathematics skills along with an elementary understanding of such subjects as history, geography, natural science, social science, art, and music.
+#     Source: UNESCO Institute for Statistics ( uis.unesco.org ). Data as of September 2021.
+#     Aggregation Method: Weighted average
+#     Development Relevance: Gross enrollment ratios indicate the capacity of each level of the education system, but a high ratio may reflect a substantial number of overage children enrolled in each grade because of repetition or late entry rather than a successful education system. The net enrollment rate excludes overage and underage students and more accurately captures the system's coverage and internal efficiency. Differences between the gross enrollment ratio and the net enrollment rate show the incidence of overage and underage enrollments.
+#     Limitations and Exceptions: Enrollment indicators are based on annual school surveys, but do not necessarily reflect actual attendance or dropout rates during the year. Also, the length of education differs across countries and can influence enrollment rates, although the International Standard Classification of Education (ISCED) tries to minimize the difference. For example, a shorter duration for primary education tends to increase the rate; a longer one to decrease it (in part because older children are more at risk of dropping out). Moreover, age at enrollment may be inaccurately estimated or misstated, especially in communities where registration of births is not strictly enforced.
+#     Long Definition: Gross enrollment ratio is the ratio of total enrollment, regardless of age, to the population of the age group that officially corresponds to the level of education shown. Primary education provides children with basic reading, writing, and mathematics skills along with an elementary understanding of such subjects as history, geography, natural science, social science, art, and music.
+#     Periodicity: Annual
+#     Statistical Concept and Methodology: Gross enrollment ratio for primary school is calculated by dividing the number of students enrolled in primary education regardless of age by the population of the age group which officially corresponds to primary education, and multiplying by 100. Data on education are collected by the UNESCO Institute for Statistics from official responses to its annual education survey. All the data are mapped to the International Standard Classification of Education (ISCED) to ensure the comparability of education programs at the international level. The current version was formally adopted by UNESCO Member States in 2011. Population data are drawn from the United Nations Population Division. Using a single source for population data standardizes definitions, estimations, and interpolation methods, ensuring a consistent methodology across countries and minimizing potential enumeration problems in national censuses. The reference years reflect the school year for which the data are presented. In some countries the school year spans two calendar years (for example, from September 2010 to June 2011); in these cases the reference year refers to the year in which the school year ended (2011 in the example).
+#     Topic: Education: Participation
+
+# Source: UNESCO Institute for Statistics ( uis.unesco.org ). Data as of September 2021.
+# License:  CC BY-4.0 
+# Development Relevance: A relative high concentration of the adult population in a given level of education reflects the capacity of the educational system in the corresponding level of education. Educational attainment is closely related to the skills and competencies of a country's population, and could be seen as a proxy of both the quantitative and qualitative aspects of the stock of human capital.
+# Limitations and Exceptions: Caution is required when using this indicator for cross-country comparison, since the countries do not always classify degrees and qualifications at the same International Standard Classification of Education (ISCED) levels, even if they are received at roughly the same age or after a similar number of years of schooling. Also, certain educational programmes and study courses cannot be easily classified according to ISCED. This indicator only measures educational attainment in terms of level of education attained, i.e. years of schooling, and do not necessarily reveal the quality of the education (learning achievement and other impacts).
+# Long Definition: The percentage of population ages 25 and over that attained or completed Bachelor's or equivalent.
+# Periodicity: Annual
+# Statistical Concept and Methodology: It is calculated by dividing the number of population ages 25 and older who attained or completed Bachelor's or equivalent by the total population of the same age group and multiplying by 100. The number 0 means zero or small enough that the number would round to zero. Data are collected by the UNESCO Institute for Statistics mainly from national population census, household survey, and labour force survey. All the data are mapped to the International Standard Classification of Education (ISCED) to ensure the comparability of education programs at the international level. The current version was formally adopted by UNESCO Member States in 2011.
+
+
+
+#ctr <- wbstats::wb_countries( )
+
+wb_data <- wbstats::wb_data(
+  indicator = c( "SE.PRM.CUAT.ZS", # Educational attainment, at least completed primary, population 25+ years, total (%) (cumulative)
+                 "SE.SEC.CUAT.LO.ZS", # Educational attainment, at least completed lower secondary, population 25+, total (%) (cumulative)
+                 "SE.SEC.CUAT.UP.ZS", # Educational attainment, at least completed upper secondary, population 25+, total (%) (cumulative)
+                 "SE.SEC.CUAT.PO.ZS", # Educational attainment, at least completed post-secondary, population 25+, total (%) (cumulative) 
+                 "SE.TER.CUAT.DO.ZS",  # Educational attainment, Doctoral or equivalent, population 25+, total(%) (cumulative)
+                 "SE.TER.CUAT.ST.ZS", # Educational attainment, at least completed short-cycle tertiary, population 25+,total (%) (cumulative)
+                 "SE.TER.CUAT.BA.ZS", # Educational attainment, at least Bachelor's or equivalent, population 25+, total (%) (cumulative)
+                 "SE.TER.CUAT.MS.ZS", # Educational attainment, at least Master's or equivalent, population 25+, total (%) (cumulative)  
+                 "SE.PRE.ENRR", # School enrollment, preprimary (% gross)
+                 "SE.PRM.ENRR", # School enrollment, primary (% gross)
+                 "SE.SEC.ENRR", # School enrollment, secondary (% gross)
+                 "SE.TER.ENRR" # School enrollment, tertiary (% gross)
+                   ),
+  #start_date = "2010",
+  mrv = 1,
+  country = ctr,
+  return_wide = FALSE)
+
+wb_data2 <- wb_data %>%
+  dplyr::select( indicator_id, indicator, date, value )%>%
+  dplyr::mutate( source = "UNESCO Institute for Statistics")
+
+```
+
+```{r getILOData}
+#install.packages("Rilostat")
+library("Rilostat")
+
+
+# toc <- Rilostat::get_ilostat_toc(search = 'ISCO')
+# head(toc)
+# 
+# tmp <- Rilostat::get_ilostat_dic("classif1", lang = "en") %>% 
+#        dplyr::filter(grepl("ISCO-",classif1.label)) 
+# head(tmp)
+
+ilodat <- Rilostat::get_ilostat(id = c("EMP_TEMP_SEX_OC2_NB_A"), 
+                   type = 'label',   
+                   filters = list(  ref_area.label = ctr,
+                                    sex.label = "Sex: Total",
+                                    time = "2020"
+                                    ),
+                   quiet = TRUE)
+
+
+# c("Occupation (ISCO-08), 2 digit level: Total", "Occupation (ISCO-08), 2 digit level: 01 - Commissioned armed forces officers", 
+# "Occupation (ISCO-08), 2 digit level: 02 - Non-commissioned armed forces officers", 
+# "Occupation (ISCO-08), 2 digit level: 03 - Armed forces occupations, other ranks", 
+# "Occupation (ISCO-08), 2 digit level: 11 - Chief executives, senior officials and legislators", 
+# "Occupation (ISCO-08), 2 digit level: 12 - Administrative and commercial managers", 
+# "Occupation (ISCO-08), 2 digit level: 13 - Production and specialised services managers", 
+# "Occupation (ISCO-08), 2 digit level: 14 - Hospitality, retail and other services managers", 
+# "Occupation (ISCO-08), 2 digit level: 21 - Science and engineering professionals", 
+# "Occupation (ISCO-08), 2 digit level: 22 - Health professionals", 
+# "Occupation (ISCO-08), 2 digit level: 23 - Teaching professionals", 
+# "Occupation (ISCO-08), 2 digit level: 24 - Business and administration professionals", 
+# "Occupation (ISCO-08), 2 digit level: 25 - Information and communications technology professionals", 
+# "Occupation (ISCO-08), 2 digit level: 26 - Legal, social and cultural professionals", 
+# "Occupation (ISCO-08), 2 digit level: 31 - Science and engineering associate professionals", 
+# "Occupation (ISCO-08), 2 digit level: 32 - Health associate professionals", 
+# "Occupation (ISCO-08), 2 digit level: 33 - Business and administration associate professionals", 
+# "Occupation (ISCO-08), 2 digit level: 34 - Legal, social, cultural and related associate professionals", 
+# "Occupation (ISCO-08), 2 digit level: 35 - Information and communications technicians", 
+# "Occupation (ISCO-08), 2 digit level: 41 - General and keyboard clerks", 
+# "Occupation (ISCO-08), 2 digit level: 42 - Customer services clerks", 
+# "Occupation (ISCO-08), 2 digit level: 43 - Numerical and material recording clerks", 
+# "Occupation (ISCO-08), 2 digit level: 44 - Other clerical support workers", 
+# "Occupation (ISCO-08), 2 digit level: 51 - Personal service workers", 
+# "Occupation (ISCO-08), 2 digit level: 52 - Sales workers", "Occupation (ISCO-08), 2 digit level: 53 - Personal care workers", 
+# "Occupation (ISCO-08), 2 digit level: 54 - Protective services workers", 
+# "Occupation (ISCO-08), 2 digit level: 61 - Market-oriented skilled agricultural workers", 
+# "Occupation (ISCO-08), 2 digit level: 62 - Market-oriented skilled forestry, fishery and hunting workers", 
+# "Occupation (ISCO-08), 2 digit level: 71 - Building and related trades workers, excluding electricians", 
+# "Occupation (ISCO-08), 2 digit level: 72 - Metal, machinery and related trades workers", 
+# "Occupation (ISCO-08), 2 digit level: 73 - Handicraft and printing workers", 
+# "Occupation (ISCO-08), 2 digit level: 74 - Electrical and electronic trades workers", 
+# "Occupation (ISCO-08), 2 digit level: 75 - Food processing, wood working, garment and other craft and related trades workers", 
+# "Occupation (ISCO-08), 2 digit level: 81 - Stationary plant and machine operators", 
+# "Occupation (ISCO-08), 2 digit level: 82 - Assemblers", "Occupation (ISCO-08), 2 digit level: 83 - Drivers and mobile plant operators", 
+# "Occupation (ISCO-08), 2 digit level: 91 - Cleaners and helpers", 
+# "Occupation (ISCO-08), 2 digit level: 92 - Agricultural, forestry and fishery labourers", 
+# "Occupation (ISCO-08), 2 digit level: 93 - Labourers in mining, construction, manufacturing and transport", 
+# "Occupation (ISCO-08), 2 digit level: 94 - Food preparation assistants", 
+# "Occupation (ISCO-08), 2 digit level: 95 - Street and related sales and service workers", 
+# "Occupation (ISCO-08), 2 digit level: 96 - Refuse workers and other elementary workers", 
+# "Occupation (ISCO-08), 2 digit level: Not elsewhere classified"
+# )
+
+```
+
+#  5 High Level Key Questions
+
+ * __Reach-out__: What are the main profile of people registering with UNHCR
+ 
+ * __Inclusion__: What could be the main obstacles to inclusion in host country for those who registered?
+ 
+ * __Protection__: What are the main Protection Risks and Needs among those registered?
+
+ * __Segmentation__: What are the main homogeneous statistical profiles among those registered?
+
+ * __Assistance__: What Responses are being provided and to Whom?
+
+---
+
+# Chapter 1: Profile of people registering with UNHCR
+
+ 1. What subset of the total population does it represent?
+ 
+ 2. How much the profiles of refugees differs from the population of local population? 
+ 
+ 3. How much we know about their Intention?
+
+---
+
+# 1.1 Registration coverage
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+## get popdata report in order to have comparison by legal status
+dat <- Individual |>
+  dplyr::group_by( LegalStatus  ) |>
+  dplyr::summarise(n = dplyr::n()) |>
+  filter( ! (is.na(LegalStatus) )) |>
+  mutate(n = as.numeric(n), 
+         ValRound =  ifelse(n > 1000, 
+                          paste(scales::label_number_si(accuracy = 0.1)(n)),
+                          as.character(n) ) )   %>%
+  dplyr::left_join( y= popdatactr, 
+                    by = c("LegalStatus" = "LegalStatus"))  |>
+  mutate(notregistered =  as.integer(ifelse(is.na(totalasr), 0, paste(totalasr - n) ))) |>
+  mutate(coverage =  ifelse(is.na(totalasr), 
+                        paste0(ValRound, " registered, not published as Stat"),
+                        paste0(ValRound, " registered, ", scales::label_number_si(accuracy = 0.1)(n/totalasr *100), 
+                               " % of total Stat")) )   |>
+  dplyr::select(LegalStatus, coverage, notregistered, n )  |>
+  tidyr::pivot_longer(
+    cols = starts_with("n"), # "LegalStatus", "coverage"
+    names_to = "datarecord", 
+    values_to = "ind"
+  ) 
+
+p <- ggplot( dat, aes(x = reorder(LegalStatus, ind),
+              y = ind,
+              fill = datarecord)) + 
+  geom_bar(stat = "identity", 
+           position = "stack"
+           # fill = "#0072bc"
+  ) + 
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si() ) +
+  scale_fill_manual(values = c( "blue", "gray"))+ 
+  guides(fill="none") + 
+  ## Position label differently in the bar in white - outside bar in black
+  geom_label( data =   function(x) subset(x, ind < max(ind) / 1.5 &
+                                            datarecord =="notregistered"),
+              aes(x = reorder(LegalStatus, ind),
+                  y = ind,
+                  label= coverage),
+              hjust = -0.1 ,
+              vjust = 0.5, 
+              colour = "black", 
+             # position = position_stack(vjust= 0.5),
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +  
+  
+  geom_label( data =   function(x) subset(x, ind >= max(ind) / 1.5  &
+                                            datarecord =="notregistered" ),
+              aes(x = reorder(LegalStatus, ind),
+                  y = ind,
+                  label= coverage),
+              hjust = 1.1 ,
+              vjust = 0.5, 
+              colour = "white", 
+             # position = position_stack(vjust= 0.5),
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +    
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank() ) + 
+  labs(title = "What is the share among the total people of concern that is registered with UNHCR?",
+       subtitle = paste0("Assessing gap between Annual Statistical Reports (grey) with Active registered Cases (Blue) in " , ctr),   
+       x = "",
+       y = "",
+       caption = paste0("Source: Data available in RIDL @ ", ridl, "compared with extract from Internal Annual Statistical Report from http://popdata.unhcr.org.\n There might be situation where the numbe of registered individual is higher than numbers reported as official statistics. That (grey) excedent will then appear as negative.") )
+
+  ## Add annotation -- use ggannotate to get the right  coordinate within chart
+  #remotes::install_github("mattcowgill/ggannotate")
+  #ggannotate::ggannotate()
+  
+  # geom_curve(aes(xend = 10.9476141263782, yend = 2959.93589579213, 
+  #                x = 6.91965137456717, y = 28668.752697603),
+  #            size = 2, color = "tan",
+  #            arrow = arrow(length = unit(0.07, "npc"))) +
+  # ggtext::geom_textbox(data = data.frame(x = 6.91965137456717, y = 28668.752697603, 
+  #                                        label = "Why so many people are using **other** category? \n Is there an important missing category within Primes?"),
+  #                     mapping = aes(x = x, y = y, label = label),
+  #                     width = unit(0.6, "npc"),
+  #                     family = "Lato", size = 7, fill = "cornsilk",
+  #                     inherit.aes = FALSE)
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+```
+
+
+---
+
+# 1.2 Age Pyramid
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+#install.packages("idbr")
+library("idbr")
+#idbr::idb_api_key('Your API key goes here')
+idbr::idb_api_key(Sys.getenv("CENSUS"))
+
+#names(Individual)
+#table(Individual$Age, useNA= "ifany")
+
+# https://stackoverflow.com/questions/15816073/population-pyramid-w-projection-in-r
+# https://stackoverflow.com/questions/14680075/simpler-population-pyramid-in-ggplot2/36804394#36804394
+thisyear <- 2021
+pyramid_data <- idbr::get_idb(
+  country = ctr,
+  year = thisyear,
+  age = 0:100,
+  sex = c("male", "female"))  |>
+  mutate(Source = "Census") %>%
+  mutate(Age = age) %>%
+  mutate(Sex = sex) %>%
+  dplyr::select(Age, Sex, pop, Source)
+
+pyramid_data1 <- Individual |>
+  filter( ! (is.na(Age) )) |>
+  dplyr::group_by(Age , Sex  ) |>
+  dplyr::summarise(pop= n()) |>
+  filter( ! Sex %in% c("Other","Unknown") )  |>
+  mutate(Source = "Registered") %>%
+  bind_rows(pyramid_data)|>
+  group_by(Source) |>
+  mutate(popprop = round( pop/sum(pop) *100 , 3))|>
+  filter( Age <= 101 ) 
+
+p <- ggplot(data = pyramid_data1, aes(x = Age, 
+                       y = popprop , 
+                       fill = Sex)) +
+  
+  #bars for all but 2030
+  geom_bar(data = pyramid_data1 |>
+             filter(Sex == "Female",
+                    Source == "Registered" ),
+           stat = "identity",
+           position = "identity") + 
+  
+  geom_bar(data = pyramid_data1 |>
+             filter(Sex == "Male", 
+                    Source == "Registered" ),
+           stat = "identity",
+           position = "identity",
+           mapping = aes(y = -popprop)) +
+  
+  #steps for 2030
+  geom_step(data =  pyramid_data1 |>
+              filter(Sex == "Female", 
+                     Source == "Census"), 
+            aes(x = Age ,
+                y = popprop  )) +
+  
+  geom_step(data =  pyramid_data1 |>
+              filter(Sex == "Male", 
+                     Source == "Census"), 
+            aes(x = Age, 
+                y = -popprop)) +
+  
+  coord_flip() +
+  guides(fill="none") + 
+  scale_y_continuous(labels = abs) +
+  scale_colour_manual(values = c("#126db4","#01ab91"),
+                      aesthetics = c("colour", "fill")) +
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.y  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.x  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = "How Much Age & Gender of Registered Population Differ from Host Population?",
+       subtitle = paste0("Comparing profiles between registered and host population (black lines) in ", ctr),   
+       x = "Age Bracket",
+       y = "As % of total population",
+       caption = paste0("Source: Data available in RIDL @ ", ridl, " compared with baseline demographic profile for the host population - source US Census Bureau ") ) + 
+  
+    ggtext::geom_textbox(data = data.frame(x = 96, y = -0.52, 
+                                           label = "Male"),
+                        mapping = aes(x = x, y = y, label = label),
+                        width = unit(0.2, "npc"),
+                        family = "Lato", size = 5, fill = "#01ab91",
+                        inherit.aes = FALSE) +
+    ggtext::geom_textbox(data = data.frame(x = 96, y = 0.52, 
+                                           label = "Female"),
+                        mapping = aes(x = x, y = y, label = label),
+                        width = unit(0.2, "npc"),
+                        family = "Lato", size = 5, fill = "#126db4",
+                        inherit.aes = FALSE)
+
+  ## Add annotation -- use ggannotate to get the right  coordinate within chart
+  #remotes::install_github("mattcowgill/ggannotate")
+  #ggannotate::ggannotate()
+  
+  # geom_curve(aes(xend = 10.9476141263782, yend = 2959.93589579213, 
+  #                x = 6.91965137456717, y = 28668.752697603),
+  #            size = 2, color = "tan",
+  #            arrow = arrow(length = unit(0.07, "npc"))) +
+  # ggtext::geom_textbox(data = data.frame(x = 6.91965137456717, y = 28668.752697603, 
+  #                                        label = "Why so many people are using **other** category? \n Is there an important missing category within Primes?"),
+  #                     mapping = aes(x = x, y = y, label = label),
+  #                     width = unit(0.6, "npc"),
+  #                     family = "Lato", size = 7, fill = "cornsilk",
+  #                     inherit.aes = FALSE)
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+```
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+# : Is it the same as the local population? Does it coincide with the data from the country of origin? If one group, such as adult men or young children, seems under- or over-represented, find out why.
+```
+
+---
+
+# 1.3 Willing To Return
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+#names(RegistrationGroup)
+#table(RegistrationGroup$WillingToReturn, useNA= "ifany")
+if( nlevels(as.factor(RegistrationGroup$WillingToReturn)) >0) {
+p <- RegistrationGroup %>% 
+  dplyr::mutate( WillingToReturn = dplyr::if_else( is.na(WillingToReturn) ,
+                                                   paste0("No info recorded"), 
+                                                   WillingToReturn)  ) %>%
+  dplyr::left_join( y = Individual) %>% 
+    dplyr::group_by( RegistrationGroupID, WillingToReturn,CountryOfOriginCat   ) %>% 
+    dplyr::summarise(Origin = dplyr::n())  %>% 
+    filter( ! (is.na(RegistrationGroupID) ))  %>%
+    tidyr::pivot_wider(names_from  = CountryOfOriginCat,
+                       names_glue = "{.value}_{CountryOfOriginCat}",
+                       values_from = Origin) %>% 
+  replace(is.na(.), 0) %>%
+  #  dplyr::mutate(dplyr::across(everything(), ~ replace_na(.x, 0))) %>%
+  dplyr::mutate(dplyr::across( where(is.integer), ~ dplyr::if_else( .x > 0 , TRUE,FALSE) ) )  %>%
+ 
+  tidyr::pivot_longer(
+    cols = starts_with("Origin"),
+    names_to = "Orig",
+    names_prefix = " ",
+    values_to = "cases",
+    values_drop_na = TRUE ) %>% 
+  dplyr::filter( cases == "TRUE" ) %>%
+  
+  dplyr::group_by(WillingToReturn, Orig ) %>% 
+  dplyr::summarise(n = dplyr::n())   %>% 
+  mutate(n = as.numeric(n), 
+         nRound =  ifelse(n > 1000, 
+                          paste(scales::label_number_si(accuracy = 0.1)(n)),
+                          as.character(n) ) ) %>%  
+  ggplot( aes(x = reorder(WillingToReturn,n), 
+              y = n )) + 
+  geom_bar(stat = "identity", 
+           fill = "#0072bc") + 
+  facet_grid(. ~ Orig ) +
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si() ) + 
+  ## Position label differently in the bar in white - outside bar in black
+  geom_label( data =   function(x) subset(x, n < max(n) / 1.5),
+              aes(x = reorder(WillingToReturn, n),
+                  y = n,
+                  label= nRound),
+              hjust = -0.1 ,
+              vjust = 0.5, 
+              colour = "black", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +  
+  geom_label( data =   function(x) subset(x, n >= max(n) / 1.5),
+              aes(x = reorder(WillingToReturn, n),
+                  y = n,
+                  label= nRound),
+              hjust = 1.1 ,
+              vjust = 0.5, 
+              colour = "white", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +   
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = "What are the intentions in terms of return by Country of Origin?",
+       subtitle = paste0("Among the ", scales::label_comma()(nrow(RegistrationGroup)),
+                         " case records, ",
+                         scales::label_comma()(nrow(RegistrationGroup %>% filter( !(is.na(WillingToReturn) )))),
+                         " includes information on this topic in ", ctr),   
+       x = "",
+       y = " ",
+       caption = paste0("Source: Data available in RIDL @ ", ridl, "\n",
+                        "Only nationality with a frequency over 10% are included. Note that this information is collected at case level.") )
+  
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+} else {
+  cat("There's not a single records of intention within the registration database")
+}
+
+```
+
+---
+
+# Chapter 2: Inclusion Capability
+
+ 1. How does the education enrollment of the refugee population compare with that of the local host population?
+ 
+ 2. How does the education attainment of the refugee population compare with that of the local host population?
+ 
+ 3. How does the professional profile composition of the refugee population compare with that of the local host population? 
+ 
+ 4. What are the main Professional Trajectory within the Refugee Population?
+ 
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+ # * Individual Property
+ # * Education
+ # * Language
+ # * Skill
+ # * Socio-Economic
+ # * Work Experience
+```
+
+---
+
+# 2.1 Education Enrollment
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+#levels(as.factor(Individual$EducationEnroll))
+# "SE.PRE.ENRR", # School enrollment, preprimary -Age 3-5 (% gross) -
+# "SE.PRM.ENRR", # School enrollment, primary -Age 6 -11(% gross)  
+# "SE.SEC.ENRR", # School enrollment, secondary -Age 12-19 (% gross)
+# "SE.TER.ENRR" # School enrollment, tertiary -Age 20-24  (% gross) 
+edEnroll <- Individual %>% 
+  dplyr::filter(!(is.na(Individual$EducationEnrollShould))) %>% 
+  dplyr::group_by(EducationEnroll  ) %>% 
+  dplyr::summarise(n = dplyr::n() ) %>% 
+  dplyr::filter(!(is.na( EducationEnroll)))  
+
+#levels(as.factor(edEnroll$EducationEnroll))
+
+ed <- Individual %>% 
+  dplyr::filter(!(is.na(Individual$EducationEnrollShould))) %>% 
+  
+  dplyr::group_by(EducationEnrollShould ) %>% 
+  dplyr::summarise(n = dplyr::n(),
+                   enrollatRightAge =  sum(EducationEnrollatRightAge == "yes"),
+                   enrollNet = enrollatRightAge /n *100 ) %>%
+  
+  dplyr::mutate( nEnrollCurrent = dplyr::case_when(
+    EducationEnrollShould == "should.be.in.preprimary" ~ 
+         as.integer(edEnroll[edEnroll$EducationEnroll=="is.in.preprimary", c("n")]),
+    EducationEnrollShould == "should.be.in.primary" ~ 
+      as.integer(edEnroll[edEnroll$EducationEnroll=="is.in.primary", c("n")]),       
+    EducationEnrollShould == "should.be.in.secondary"  ~ 
+      as.integer(edEnroll[edEnroll$EducationEnroll=="is.in.secondary", c("n")]),
+    EducationEnrollShould == "should.be.in.tertiary"  ~ 
+      as.integer(edEnroll[edEnroll$EducationEnroll=="is.in.tertiary", c("n")]) )) %>% 
+  dplyr::mutate(valueR = nEnrollCurrent /n *100 )  
+
+
+p <- ed %>% 
+  dplyr::mutate( #source = "UNHCR Primes",
+    dateR =  2021 ) %>%
+  dplyr::mutate(indicator_id = dplyr::case_when(
+    EducationEnrollShould == "should.be.in.preprimary" ~ "SE.PRE.ENRR",
+    EducationEnrollShould == "should.be.in.primary" ~ "SE.PRM.ENRR",        
+    EducationEnrollShould == "should.be.in.secondary" ~ "SE.SEC.ENRR",
+    EducationEnrollShould == "should.be.in.tertiary" ~ "SE.TER.ENRR")) %>% 
+  dplyr::filter( indicator_id %in% wb_data2$indicator_id) %>%
+  dplyr::select( indicator_id,dateR,  valueR ) %>%
+  #dplyr::arrange(desc(value)) %>%
+  dplyr::left_join(wb_data2) %>%
+  dplyr::mutate(indicator  = dplyr::case_when(
+    indicator_id == "SE.PRE.ENRR"  ~ "School enrollment, preprimary -Age 3-5", 
+    indicator_id ==  "SE.PRM.ENRR"~ "School enrollment, primary -Age 6 -11",      
+    indicator_id ==  "SE.SEC.ENRR"~ "School enrollment, secondary -Age 12-19", 
+    indicator_id ==  "SE.TER.ENRR"~ "School enrollment, tertiary -Age 20-24")) %>%  
+  dplyr::mutate(indicator  = factor(indicator,
+                                    levels = c("School enrollment, preprimary -Age 3-5",
+                                               "School enrollment, primary -Age 6 -11",
+                                               "School enrollment, secondary -Age 12-19",
+                                               "School enrollment, tertiary -Age 20-24"))) %>% 
+  dplyr::filter( !(is.na(indicator)) )  %>% 
+  ggplot( ) + 
+  geom_bar(aes(x = indicator, 
+               y = value),
+           fill = "gray80",
+           stat = "identity") + 
+  geom_bar(aes(x = indicator, 
+               y = valueR),
+           fill = "#0072bc", 
+           width = .6,
+           stat = "identity") + 
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si(),
+                      breaks= seq(0, 100, by = 20)) +
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = "How Education Enrollment of registered Population (blue) compare with Host?",
+       subtitle = paste0("Percentage of kids enrolled at certain level vis a vis all kids that should in that level in ", ctr),   
+       x = "",
+       y = "As % (this can be more than 100%, as there might be more enrollment in a level than what the regular age group would imply)",
+       caption = paste0( "Source: Data available in RIDL @ ",
+                         ridl, 
+                         " compared with baseline information for the country from UNESCO Institute for Statistics\n",
+                        str_wrap( 
+         "Note that UNHCR captures school attendance at time of registration, which is slightly different from the concept of Enrollment. Gross enrollment ratios indicate the capacity of each level of the education system, but a high ratio may reflect a substantial number of overage children enrolled in each grade because of repetition or late entry rather than a successful education system. The net enrollment rate excludes overage and underage students and more accurately captures the system's coverage and internal efficiency. Differences between the gross enrollment ratio and the net enrollment rate show the incidence of overage and underage enrollments  (see International Standard Classification of Education - ISCED). ", 
+                         180)) ) 
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+---
+
+# 2.2 Education Attainment
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+wb_data2 <- wb_data %>%
+  dplyr::select( indicator_id, date, value )#%>%
+  #dplyr::mutate( source = "UNESCO Institute for Statistics")
+
+#levels(as.factor(Individual$EducationAttainment))
+
+#table(Individual$EducationAttainment, useNA = "ifany")
+Individual$EducationAttainment <- factor(Individual$EducationAttainment,
+                                            levels = c("TER.DO","SEC.PO", 
+                                                       "SEC.UP",
+                                                       "SEC.LO", "PRM", "Not Measured"  ))
+
+
+ed <- Individual %>% 
+  dplyr::filter( EducationAttainment != "Not Applicable") %>% 
+  dplyr::group_by(EducationAttainment ) %>% 
+  dplyr::summarise(n = dplyr::n()) #%>%
+  ## calculate cumulative 
+  # dplyr::group_by(EducationAttainment ) %>% 
+
+
+p <- ed  %>%
+   dplyr::mutate(nCum =   
+                dplyr::case_when(
+                  EducationAttainment == "TER.DO" ~ n  ,
+                  EducationAttainment == "SEC.PO" ~  
+                          as.integer (ed  %>% 
+                                        dplyr::filter(EducationAttainment== "SEC.PO" ) %>%
+                                        dplyr::select(n) +
+                                        ed  %>% 
+                                        dplyr::filter(EducationAttainment== "TER.DO" ) %>%
+                                        dplyr::select(n) ),  
+                  EducationAttainment == "SEC.UP" ~  
+                           as.integer (ed  %>% 
+                                       dplyr::filter(EducationAttainment== "SEC.LO" ) %>%
+                                       dplyr::select(n) +
+                                         ed  %>% 
+                                         dplyr::filter(EducationAttainment== "TER.DO" ) %>%
+                                         dplyr::select(n) +
+                                       ed  %>% 
+                                       dplyr::filter(EducationAttainment== "SEC.PO" ) %>%
+                                       dplyr::select(n) ),  
+                  EducationAttainment == "SEC.LO" ~  
+                          as.integer (ed  %>% 
+                                        dplyr::filter(EducationAttainment== "SEC.LO" ) %>%
+                                        dplyr::select(n) +
+                                        ed  %>% 
+                                        dplyr::filter(EducationAttainment== "SEC.UP" ) %>%
+                                        dplyr::select(n) +
+                                        ed  %>% 
+                                        dplyr::filter(EducationAttainment== "TER.DO" ) %>%
+                                        dplyr::select(n) +
+                                        ed  %>% 
+                                        dplyr::filter(EducationAttainment== "SEC.PO" ) %>%
+                                        dplyr::select(n)  ),  
+                  EducationAttainment == "PRM" ~  
+                        as.integer (ed  %>% 
+                                      dplyr::filter(EducationAttainment== "SEC.LO" ) %>%
+                                      dplyr::select(n) +
+                                      ed  %>% 
+                                      dplyr::filter(EducationAttainment== "PRM" ) %>%
+                                      dplyr::select(n) +
+                                      ed  %>% 
+                                      dplyr::filter(EducationAttainment== "SEC.UP" ) %>%
+                                      dplyr::select(n) +
+                                      ed  %>% 
+                                      dplyr::filter(EducationAttainment== "TER.DO" ) %>%
+                                      dplyr::select(n) +
+                                      ed  %>% 
+                                      dplyr::filter(EducationAttainment== "SEC.PO" ) %>%
+                                      dplyr::select(n)   )
+                  )) %>%
+  dplyr::mutate(valueR = round(nCum / sum(n) *100, 3)) %>% 
+    dplyr::mutate( #source = "UNHCR Primes",
+                  dateR =  2021 ) %>%
+  dplyr::mutate(indicator_id = dplyr::case_when(
+    EducationAttainment == "PRM" ~ "SE.PRM.CUAT.ZS",
+    EducationAttainment == "SEC.LO" ~ "SE.SEC.CUAT.LO.ZS",        
+    EducationAttainment == "SEC.UP" ~ "SE.SEC.CUAT.UP.ZS",
+    EducationAttainment == "SEC.PO" ~ "SE.SEC.CUAT.PO.ZS",          
+    EducationAttainment == "TER.DO" ~ "SE.TER.CUAT.DO.ZS")) %>% 
+  dplyr::filter( indicator_id %in% wb_data2$indicator_id) %>%
+  dplyr::select( indicator_id,dateR,  valueR ) %>%
+  #dplyr::arrange(desc(value)) %>%
+  dplyr::left_join(wb_data2) %>%
+  dplyr::mutate(indicator  = dplyr::case_when(
+    indicator_id == "SE.PRM.CUAT.ZS"  ~ "At least completed primary", ## PRM + LO +UP + PO +DO
+    indicator_id ==  "SE.SEC.CUAT.LO.ZS"~ "At least completed lower secondary (grade 6-9)", ## LO + UP + PO +DO      
+    indicator_id ==  "SE.SEC.CUAT.UP.ZS"~ "At least completed upper secondary (grade 10-14)", ##  UP + PO +DO
+    indicator_id ==  "SE.SEC.CUAT.PO.ZS"~ "At least completed post-secondary",  ## PO +DO         
+    indicator_id ==  "SE.TER.CUAT.DO.ZS"~ "Doctoral or equivalent" )) %>%  # DO
+  dplyr::mutate(indicator  = factor(indicator,
+                        levels = c("At least completed primary",
+                                   "At least completed lower secondary (grade 6-9)",
+                                   "At least completed upper secondary (grade 10-14)",
+                                   "At least completed post-secondary",
+                                   "Doctoral or equivalent"))) %>% 
+  dplyr::filter( !(is.na(indicator)) )  %>% 
+  ggplot( ) + 
+  geom_bar(aes(x = indicator, 
+               y = value),
+           fill = "gray80",
+           stat = "identity") + 
+  geom_bar(aes(x = indicator, 
+               y = valueR),
+           fill = "#0072bc", 
+           width = .6,
+           stat = "identity") + 
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si() ) + 
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = "How Education Attainment  of registered Population (blue) compare with Host?",
+       subtitle = paste0("Attainement relates to the cumulative percentage of population ages 25 and over that attained certain levels in ",ctr),   
+       x = "",
+       y = "",
+       caption = paste0("Source: Data available in RIDL @ ", ridl, " compared with baseline information for the country from UNESCO Institute for Statistics\n", str_wrap( 
+         "A relative high concentration of the adult population in a given level of education reflects the capacity of the educational system in the corresponding level of education. Educational attainment is closely related to the skills and competencies of a country's population, and could be seen as a proxy of both the quantitative and qualitative aspects of the stock of human capital (see International Standard Classification of Education - ISCED).", 
+         180)) ) 
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+
+
+
+
+
+---
+
+# 2.3 Occupation Profile
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# http://www.harryganzeboom.nl/isco08/qa-isco-08.htm
+
+p <- Individual %>% 
+  # dplyr::left_join(WorkExperience %>%
+  #                    dplyr::mutate(WorkExperience = WorkType) %>%
+  #                    dplyr::mutate(ModifiedOnWork = ModifiedOn) %>%
+  #                    dplyr::select(IndividualID, WorkExperience,ModifiedOnWork) ,
+  #                  by = c("IndividualID")) %>% 
+  # dplyr::arrange(desc(ModifiedOnWork)) %>% 
+  # dplyr::filter(!duplicated(IndividualID, fromLast = FALSE)) %>% 
+  dplyr::group_by( WorkExperience  ) %>% 
+  dplyr::summarise(n = dplyr::n()) %>% 
+  mutate(n = as.numeric(n), 
+         nRound =  ifelse(n > 1000, 
+                          paste(scales::label_number_si(accuracy = 0.1)(n)),
+                          as.character(n) ) ) %>%
+  filter( ! (is.na(WorkExperience) )) %>% 
+  arrange(desc(n)) %>%
+  head(15) %>% 
+  ggplot( aes(x = reorder(WorkExperience, n),
+              y = n )) + 
+  geom_bar(stat = "identity", 
+           fill = "#0072bc") + 
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si() ) + 
+    ## Position label differently in the bar in white - outside bar in black
+    geom_label( data =   function(x) subset(x, n < max(n) / 1.5),
+                aes(x = reorder(WorkExperience, n),
+                y = n,
+                    label= nRound),
+                hjust = -0.1 ,
+                vjust = 0.5, 
+                colour = "black", 
+                fill = NA, 
+                label.size = NA, 
+                family = "Lato", 
+                size = 4   ) +  
+  
+    geom_label( data =   function(x) subset(x, n >= max(n) / 1.5),
+                aes(x = reorder(WorkExperience, n),
+                y = n,
+                    label= nRound),
+                hjust = 1.1 ,
+                vjust = 0.5, 
+                colour = "white", 
+                fill = NA, 
+                label.size = NA, 
+                family = "Lato", 
+                size = 4   ) +   
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = "What are the main type of work before asylum declared by registered individual?",
+       subtitle = paste0("Among the ", scales::label_comma()(nrow(Individual)),
+                         " records, ",
+                         scales::label_comma()(nrow(Individual %>% filter( !(is.na(WorkExperience) )))),
+                         " includes information on this topic in ", ctr),   
+       x = "",
+       y = "",
+       caption = paste0("Source: Data available in RIDL @ ", ridl) ) 
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+# 2.4 Work Trajectory
+# names(WorkExperience)
+# WorkExperience %>% 
+#   dplyr::group_by( WorkType, CountryOfWork   ) %>% 
+#   dplyr::summarise(n = dplyr::n()) %>% 
+#   mutate(n = as.numeric(n), 
+#          nRound =  ifelse(n > 1000, 
+#                            paste(scales::label_number_si(accuracy = 0.1)(n)),
+#                            as.character(n) ) ) %>%
+#   filter( ! (is.na(WorkType) )) %>% 
+#   filter( CountryOfWork != ctr ) %>% 
+#   arrange(desc(n)) %>%
+#   head(10)  %>% 
+#   ggplot( aes(x = reorder(WorkType, n),
+#               y = n )) + 
+#   geom_bar(stat = "identity", 
+#            fill = "#0072bc") + 
+#   coord_flip() + 
+#   scale_y_continuous( label = scales::label_number_si() ) + 
+#     ## Position label differently in the bar in white - outside bar in black
+#     geom_label( data =   function(x) subset(x, n < max(n) / 1.5),
+#                 aes(x = reorder(WorkType, n),
+#                 y = n,
+#                     label= nRound),
+#                 hjust = -0.1 ,
+#                 vjust = 0.5, 
+#                 colour = "black", 
+#                 fill = NA, 
+#                 label.size = NA, 
+#                 family = "Lato", 
+#                 size = 4   ) +  
+#   
+#     geom_label( data =   function(x) subset(x, n >= max(n) / 1.5),
+#                 aes(x = reorder(WorkType, n),
+#                 y = n,
+#                     label= nRound),
+#                 hjust = 1.1 ,
+#                 vjust = 0.5, 
+#                 colour = "white", 
+#                 fill = NA, 
+#                 label.size = NA, 
+#                 family = "Lato", 
+#                 size = 4   ) +    
+#   scale_x_discrete(labels = function(x) {x %>% str_wrap(40)}) +
+#   geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+#   unhcrthemes::theme_unhcr( font_size= 18)  +  
+#   theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+#         panel.grid.major.y  = element_blank(), 
+#         panel.grid.minor = element_blank()) + 
+#   labs(title = paste0("Top 10 Work Experience Type outside ", ctr),
+#        subtitle = paste0("Among the ", scales::label_comma()(nrow(WorkExperience)),
+#                          " records, ",
+#                          scales::label_comma()(nrow(WorkExperience %>% filter( !(is.na(WorkType) )))),
+#                          " includes information on this topic"),   
+#        x = "",
+#        y = "",
+#        caption = paste0("Source: Data available in RIDL @ ", ridl) )
+```
+
+
+---
+
+# Chapter 3:  Main Protection Risk and Needs 
+
+ 1. __Gender__: Is there a higher-than-average percentage of women within registered case? 
+ 
+ 2. __Dependency__: Is there a higher-than-average percentage of Children and Older persons within registered case? 
+
+ 3. __Documentation__: What is the share of registered population with valid Document?
+
+ 4. __Specific Needs__: What the main Specific Needs 
+ 
+ 4. __Risk__: How combination of needs are combined?
+  
+ 
+---
+
+
+# 3.1 How well documented is the population?
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+#names(Document)
+#levels(as.factor(Document$DocumentType))
+
+p <- Individual %>% 
+  dplyr::filter( LegalStatus != "Not of concern" ) %>% 
+  #names(Individual)
+  dplyr::select(IndividualID, Age, AgeCohort, Sex, LegalStatus ) %>% 
+  dplyr::left_join(Document) %>% 
+  
+  ## Add something for individuals that have no linked doc
+  dplyr::mutate( DocumentType = dplyr::if_else(is.na(DocumentType), "No records of Document", DocumentType)) %>% 
+  ## Clean record with "-"
+  dplyr::mutate( DocumentType = dplyr::if_else(DocumentType== "-", "Unknown (no event)" , DocumentType)) %>% 
+  ## Clean Document type
+  dplyr::mutate(DocumentType = str_replace(DocumentType, " \\(no event\\)", ""))  %>% 
+  ## Concat document type and status
+  dplyr::mutate( doctypestatus = paste0( DocumentType,
+                                         dplyr::if_else(is.na(DocumentStatus), " ", 
+                                                        paste0(" / ",  DocumentStatus) ))) %>% 
+  ## clean potential duplicate
+  dplyr::distinct(IndividualID, doctypestatus, .keep_all = TRUE)  %>%   
+  
+  dplyr::group_by( doctypestatus  ) %>% 
+  dplyr::summarise(cnt = dplyr::n())    %>% 
+  dplyr::mutate( totalind = nrow(Individual %>% 
+                                   dplyr::filter( LegalStatus != "Not of concern" )),
+                 n = cnt/totalind  )    %>%  # 
+  dplyr::mutate(n = as.numeric(n), 
+         nRound =  paste0( scales::label_number_si(accuracy = 0.1)(n*100),  "%"))    %>%
+  dplyr::mutate(flag = dplyr::if_else(doctypestatus == "No records of Document ", "yes",   "no" ))    %>%
+  # filter( ! (is.na(doctypestatus) )) %>% 
+  arrange(desc(n)) %>%
+  head(15)    %>% 
+  ggplot( aes(x = reorder(doctypestatus,n), 
+              y = n,
+              fill = flag)) + 
+  guides(fill= "none") +
+  scale_colour_manual(values = c("#0072bc", "#CCCCCC"),
+                      aesthetics = c("colour", "fill")) +
+  geom_bar(stat = "identity" ) + 
+          # fill = "#0072bc") + 
+  coord_flip() + 
+  scale_y_continuous(labels=scales::percent, breaks= seq(0, 1, by = 0.2)) +
+  ## Position label differently in the bar in white - outside bar in black
+  geom_label( data =   function(x) subset(x, n < max(n) / 1.5),
+              aes(x = reorder(doctypestatus, n),
+                  y = n,
+                  label= nRound),
+              hjust = -0.1 ,
+              vjust = 0.5, 
+              colour = "black", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +  
+  
+  geom_label( data =   function(x) subset(x, n >= max(n) / 1.5),
+              aes(x = reorder(doctypestatus, n),
+                  y = n,
+                  label= nRound),
+              hjust = 1.1 ,
+              vjust = 0.5, 
+              colour = "white", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +   
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = "What type of documentation registered individuals have? ",
+       subtitle = paste0("Top 15 Documentation type & status in ",ctr),   
+       x = "",
+       y = "",
+       caption = paste0("Source: Data available in RIDL @ ", ridl, "\n One individual can actually have more than one type of document, except when there is No records of Document") )
+
+ 
+  
+  ## Add annotation -- use ggannotate to get the right  coordinate within chart
+  #remotes::install_github("mattcowgill/ggannotate")
+  #ggannotate::ggannotate()
+  
+  # geom_curve(aes(xend = 10.9476141263782, yend = 2959.93589579213, 
+  #                x = 6.91965137456717, y = 28668.752697603),
+  #            size = 2, color = "tan",
+  #            arrow = arrow(length = unit(0.07, "npc"))) +
+  # ggtext::geom_textbox(data = data.frame(x = 6.91965137456717, y = 28668.752697603, 
+  #                                        label = "Why so many people are using **other** category? \n Is there an important missing category within Primes?"),
+  #                     mapping = aes(x = x, y = y, label = label),
+  #                     width = unit(0.6, "npc"),
+  #                     family = "Lato", size = 7, fill = "cornsilk",
+  #                     inherit.aes = FALSE)
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+
+
+# 3.2 Women & Dependency  Ratio 
+
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+pfemaleRat <- RegistrationGroupall %>% 
+  dplyr::group_by( ratio_female_cat  ) %>% 
+  dplyr::summarise(n = dplyr::n()) %>% 
+  mutate(n = as.numeric(n), 
+         nRound =  ifelse(n > 1000, 
+                          paste(scales::label_number_si(accuracy = 0.1)(n)),
+                          as.character(n) ) ) %>%
+  filter( ! (is.na(ratio_female_cat) )) %>% 
+  arrange(desc(n)) %>%
+  head(15)  %>% 
+ ggplot( aes(x = ratio_female_cat, 
+            y = n )) + 
+  geom_bar(stat = "identity", 
+           fill = "#0072bc") + 
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si() ) + 
+  ## Position label differently in the bar in white - outside bar in black
+  geom_label( data =   function(x) subset(x, n < max(n) / 1.5),
+              aes(x = ratio_female_cat,
+                  y = n,
+                  label= nRound),
+              hjust = -0.1 ,
+              vjust = 0.5, 
+              colour = "black", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +  
+  
+  geom_label( data =   function(x) subset(x, n >= max(n) / 1.5),
+              aes(x = ratio_female_cat,
+                  y = n,
+                  label= nRound),
+              hjust = 1.1 ,
+              vjust = 0.5, 
+              colour = "white", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +   
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = " ",
+       subtitle = paste0("Proportion of Female "),   
+       x = "",
+       y = "" ) 
+
+pyouthRat <- RegistrationGroupall %>% 
+  dplyr::group_by( ratio_youth_cat  ) %>% 
+  dplyr::summarise(n = dplyr::n()) %>% 
+  mutate(n = as.numeric(n), 
+         nRound =  ifelse(n > 1000, 
+                          paste(scales::label_number_si(accuracy = 0.1)(n)),
+                          as.character(n) ) ) %>%
+  filter( ! (is.na(ratio_youth_cat) )) %>% 
+  arrange(desc(n)) %>%
+  head(15)  %>% 
+  ggplot( aes(x = ratio_youth_cat, 
+              y = n )) + 
+  geom_bar(stat = "identity", 
+           fill = "#0072bc") + 
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si() ) + 
+  ## Position label differently in the bar in white - outside bar in black
+  geom_label( data =   function(x) subset(x, n < max(n) / 1.5),
+              aes(x = ratio_youth_cat,
+                  y = n,
+                  label= nRound),
+              hjust = -0.1 ,
+              vjust = 0.5, 
+              colour = "black", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +  
+  
+  geom_label( data =   function(x) subset(x, n >= max(n) / 1.5),
+              aes(x = ratio_youth_cat,
+                  y = n,
+                  label= nRound),
+              hjust = 1.1 ,
+              vjust = 0.5, 
+              colour = "white", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +   
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = " ",
+       subtitle = paste0("Youth Dependency"),   
+       x = "",
+       y = "" ) 
+
+
+peldernRat <- RegistrationGroupall %>% 
+  dplyr::group_by( ratio_eldern_cat  ) %>% 
+  dplyr::summarise(n = dplyr::n()) %>% 
+  mutate(n = as.numeric(n), 
+         nRound =  ifelse(n > 1000, 
+                          paste(scales::label_number_si(accuracy = 0.1)(n)),
+                          as.character(n) ) ) %>%
+  filter( ! (is.na(ratio_eldern_cat) )) %>% 
+  arrange(desc(n)) %>%
+  head(15)  %>% 
+  ggplot( aes(x = ratio_eldern_cat, 
+              y = n )) + 
+  geom_bar(stat = "identity", 
+           fill = "#0072bc") + 
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si() ) + 
+  ## Position label differently in the bar in white - outside bar in black
+  geom_label( data =   function(x) subset(x, n < max(n) / 1.5),
+              aes(x = ratio_eldern_cat,
+                  y = n,
+                  label= nRound),
+              hjust = -0.1 ,
+              vjust = 0.5, 
+              colour = "black", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +  
+  
+  geom_label( data =   function(x) subset(x, n >= max(n) / 1.5),
+              aes(x = ratio_eldern_cat,
+                  y = n,
+                  label= nRound),
+              hjust = 1.1 ,
+              vjust = 0.5, 
+              colour = "white", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +   
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = " ",
+       subtitle = paste0("Eldern Dependency"),   
+       x = "",
+       y = "" ) 
+
+p <- pfemaleRat  + 
+  pyouthRat +  
+  peldernRat  + 
+  plot_annotation(
+  title = paste0("What are the Case composition Ratio within each Registered Group in ", ctr, "?"),
+  caption = paste0("Source: Data available in RIDL @ ", ridl, "\n. This information can provide an initial overview of potential vulnerabilities within the case load.") )
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+```
+
+---
+
+# 3.3 Specific Need  Sub Category by case
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+p <- SpecificNeed %>% 
+  dplyr::left_join( y = Individual,
+                    by = c("IndividualID")) %>% 
+  dplyr::group_by( RegistrationGroupID, SpecificNeedSub   ) %>% 
+  dplyr::summarise(n = dplyr::n()) %>% 
+  filter( ! (is.na(SpecificNeedSub) ))  %>% 
+  filter( ! (is.na(RegistrationGroupID) ))   %>% 
+  dplyr::group_by( SpecificNeedSub  ) %>% 
+  dplyr::summarise(uniquecase = dplyr::n())  %>%    
+  dplyr::arrange(desc(uniquecase)) %>%
+  head(15)  %>% 
+
+  dplyr::left_join(SpecificNeed %>% 
+                     dplyr::left_join( y = Individual,
+                                       by = c("IndividualID")) %>% 
+                     dplyr::group_by( RegistrationGroupID, SpecificNeedSub   ) %>% 
+                     dplyr::summarise(n = dplyr::n()) %>% 
+                     filter( ! (is.na(SpecificNeedSub) ))  %>% 
+                     filter( ! (is.na(RegistrationGroupID) ))   %>% 
+                     dplyr::group_by( SpecificNeedSub  ) %>% 
+                     dplyr::summarise(totalind = sum(n))
+  ) %>% 
+  dplyr::mutate(avgindpercase = totalind/uniquecase)   %>%
+  mutate(uniquecase = as.numeric(uniquecase), 
+       nRound =  ifelse(uniquecase > 1000, 
+                        paste(scales::label_number_si(accuracy = 0.1)(uniquecase)),
+                        as.character(uniquecase) ) ) %>%  
+  ggplot( aes(x = reorder(SpecificNeedSub,uniquecase), 
+              y = uniquecase )) + 
+  geom_bar(stat = "identity", 
+           fill = "#0072bc") + 
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si() ) + 
+  ## Position label differently in the bar in white - outside bar in black
+  geom_label( data =   function(x) subset(x, uniquecase < max(uniquecase) / 1.5),
+              aes(x = reorder(SpecificNeedSub, uniquecase),
+                  y = uniquecase,
+                  label= nRound),
+              hjust = -0.1 ,
+              vjust = 0.5, 
+              colour = "black", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +  
+  
+  geom_label( data =   function(x) subset(x, uniquecase >= max(uniquecase) / 1.5),
+              aes(x = reorder(SpecificNeedSub, uniquecase),
+                  y = uniquecase,
+                  label= nRound),
+              hjust = 1.1 ,
+              vjust = 0.5, 
+              colour = "white", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +   
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = paste0("What are the main occurence of Specific Needs at case level in ", ctr, "?"),
+       subtitle = paste0("Among the ", scales::label_comma()(nrow(RegistrationGroup)),
+                         " case records, ",
+                         scales::label_comma(accuracy = .1)(nrow(RegistrationGroupall %>% filter(countneed =="FALSE")) / nrow(RegistrationGroupall ) *100) ,
+                         " % of cases have no single associated records of specific needs"),   
+       x = "",
+       y = "",
+       caption = paste0("Source: Data available in RIDL @ ", ridl ,  "\n",
+         str_wrap( 
+         "This chart presents only the top 15 most frequent specific needs - type and subtype - measured in terms of occurence at case level (i.e. at least one record). One Individual can have more than one specific needs.",
+           180) )) 
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+---
+
+# 3.4 Association of specific needs
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+topneeds <- as.vector(as.data.frame(SpecificNeed %>% 
+  dplyr::left_join( y = Individual,
+                    by = c("IndividualID")) %>% 
+  dplyr::group_by( RegistrationGroupID, SpecificNeedSub   ) %>% 
+  dplyr::summarise(n = dplyr::n()) %>% 
+  filter( ! (is.na(SpecificNeedSub) ))  %>% 
+  filter( ! (is.na(RegistrationGroupID) ))   %>% 
+  dplyr::group_by( SpecificNeedSub  ) %>% 
+  dplyr::summarise(uniquecase = dplyr::n())  %>%    
+  dplyr::arrange(desc(uniquecase)) %>%
+  head(15) %>%
+  dplyr::select(SpecificNeedSub)   )) |>
+  as.data.frame() |>
+  dplyr::pull()
+
+ 
+d1 <- SpecificNeed %>% 
+  dplyr::filter(SpecificNeedSub  %in%  topneeds) %>%
+  dplyr::left_join( y = Individual,
+                    by = c("IndividualID")) %>% 
+  dplyr::group_by( RegistrationGroupID, SpecificNeedSub   ) %>% 
+  dplyr::summarise(n = dplyr::n())  %>% 
+  filter( ! (is.na(RegistrationGroupID) ))  %>%
+  tidyr::pivot_wider(names_from  = SpecificNeedSub,
+                     values_from = n) #%>% 
+d <- d1  %>% 
+ replace(is.na(.), 0)
+ # mutate(  across(everything(), ~replace_na(.x, 0))  )
+
+# d  %>%
+#   dplyr::ungroup() %>%
+#   dplyr::select( - 1 ) %>% 
+#   corrr::correlate() %>% 
+#   corrr::network_plot(min_cor = 0.3)
+
+d2 <- d  %>%
+  dplyr::ungroup() %>%
+  dplyr::select( - 1 )  
+
+# Create a tidy data frame of correlations
+corr <- d2 %>% 
+  corrr::correlate() 
+
+corrMat <- round(cor(d2), 1)
+p.mat <- ggcorrplot::cor_pmat(d2)
+#corrr::correlate(d2) 
+
+p <- ggcorrplot::ggcorrplot(  corrMat  ,
+           hc.order = TRUE,
+           type = "lower",
+            method = "circle",
+           outline.col = "white",
+           ggtheme = ggplot2::theme_gray,
+           colors = c("#6D9EC1", "white", "#E46726") ,
+           ## cross if not significant
+            p.mat = p.mat) + 
+   guides(fill= "none") +
+  unhcrthemes::theme_unhcr( font_size= 12)  +  
+   theme(axis.text.x = element_text(size = 8, angle = 40,  hjust=1),
+        axis.text.y = element_text(size = 8) ) +
+  labs(
+    y = "",
+    x = " ",
+    title = paste0("What are the main Associations between different types of Specific needs in ", ctr, "?"),
+    subtitle = str_wrap( 
+      "Correlation analysis: Red color indicate a positive association, while blue a negative one. The bigger the dot, the stronger the association, cross indicates the absence of significative association",
+      180) ,
+    caption = paste0("Source: Data available in RIDL @ ", ridl, "")
+  )
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+# tidy_cors <-corr %>% 
+#   corrr::stretch()
+# 
+# 
+# # Convert correlations stronger than some value
+# # to an undirected graph object
+# graph_cors <- tidy_cors %>%
+#   filter(abs(r) > .1) %>%
+#   igraph::graph_from_data_frame(directed = FALSE)
+# 
+# # Plot
+# ggraph(graph_cors) +
+#   geom_edge_link(aes(edge_alpha = abs(r),
+#                      edge_width = abs(r), 
+#                      color = r)) +
+#   guides(edge_alpha = "none", 
+#          edge_width = "none") +
+#   scale_edge_colour_gradientn(limits = c(-1, 1), 
+#                               # colors = c("firebrick2",
+#                               #            "dodgerblue2")
+#                               colors = c("blue", "gray90",  "red")
+#                               ) +
+#   geom_node_point(color = "gray90", 
+#                   size = 7) +
+#   geom_node_text(aes(label = name), 
+#                  repel = TRUE) + 
+#   unhcrthemes::theme_unhcr( font_size= 18)  +  
+#   theme(panel.grid.major.x  = element_blank(), 
+#         panel.grid.major.y  = element_blank(), 
+#         panel.grid.minor = element_blank(), 
+#         axis.text.x =  element_blank(), 
+#         axis.text.y = element_blank(), 
+#         legend.key.height= unit(0.5, 'cm'),
+#         legend.key.width= unit(3, 'cm') ) +
+#   labs(
+#     y = "",
+#     x = " ",
+#     title = paste0("What are the main Association between different types of Specific needs in ", ctr, "?"),
+#     subtitle = paste0("Correlation analysis: Red color indicate a positive association, while blue a negative one. "),
+#     caption = paste0("Source: Data available in RIDL @ ", ridl, "")
+#   )
+```
+
+---
+
+# Chapter 4: Population Segmentation
+
+
+ * Since the 70's, Social scientist have developed __data exploratory__ techniques that allow to discover statistical segments among a specific population. Those techniques are commonly used in __marketing studies__.
+
+ * To do that, Clustering analysis aims to group a set of records in such a way that records in the same group are more similar to each other than to those in other groups. [Multiple Correspondence Analysis (MCA)](https://en.wikipedia.org/wiki/Multiple_correspondence_analysis) together with [Hierarchical Classification on Principle Components](http://factominer.free.fr/classical-methods/hierarchical-clustering-on-principal-components.html) are use to process together multiple categorical data  in order to detect and represent the __underlying structures__ in a data set. 
+
+ * This aims at generating induction rather than testing an hypothesis according to model. The resulting segments should be interpreted as broad categories (rather than a criteria-based classification) that can then help informing programme design and subsequent __theories of change__ for each segments.
+ 
+---
+
+# 4.1 Variables to segment the population
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+## https://www.datanovia.com/en/blog/cluster-analysis-in-r-simplified-and-enhanced/ 
+# https://www.datanovia.com/en/lessons/cluster-validation-statistics-must-know-methods/
+## See video https://www.youtube.com/watch?v=0z30RDikYaw
+
+## Step 1: Select variables used for clustering
+data2cluster <- RegistrationGroupall[,  c("group_size1", 
+                  "ratio_female_cat",
+                  "sex_fp",
+                  "ratio_dependant_cat",
+                  "age_sd_cat",  
+                    "divorced_separated_widow",                         
+                     "single_adult" , "single_minor" , "child_at_risk" ,
+                    "married_engaged", "disability" ,
+                    "specific_legal_and_physical_protection_needs",  
+                    "serious_medical_condition", "sgbv" )] %>%
+  dplyr::mutate_if(is.integer,as.factor) %>%
+  dplyr::mutate_if(is.numeric,as.factor)%>%
+  dplyr::mutate_if(is.logical,as.factor)
+
+samplesize <- 10000
+data.sample <- data2cluster[sample(1:nrow(data2cluster), 
+                            samplesize,
+                            replace=FALSE), ]
+
+## Step 2: perform Multiple correspondance analysis
+data.mca <- FactoMineR::MCA(data.sample, graph= FALSE)
+
+## Step 3: Hierarchical Classification
+data.mca.hcpc <- FactoMineR::HCPC(data.mca, 
+                                  nb.clust=-1, 
+                                  min=3, 
+                                  max=4, 
+                                  graph=FALSE, 
+                                  order=FALSE, 
+                                  consol=TRUE, 
+                                  kk=1000)
+
+## Predict projection for new rows with Multiple Correspondence Analysis
+#data.predict <- predict(data.mca, data2cluster)
+
+## Step 4:  Associate group with clusters
+cluster <- data.mca.hcpc$data.clust
+cluster$clust <- as.character(cluster$clust)
+cluster$clust[cluster$clust==1] <- "Segment 1"
+cluster$clust[cluster$clust==2] <- "Segment 2"
+cluster$clust[cluster$clust==3] <- "Segment 3"
+cluster$clust[cluster$clust==4] <- "Segment 4"
+cluster$clust <- as.factor(cluster$clust)
+
+### Now create a patchwork with key plots from this 
+## plot 1 with variable
+pvar <- factoextra::fviz_mca_var(data.mca, 
+                                 labelsize = 3, 
+                                 repel = TRUE,
+                                 pointsize = 0, 
+                                 select.var = list(contrib = 15)) +
+  labs(title = "Representation of variables proximity" )  +   
+  labs(caption = "This charts display the results of Multiple Correspondance Analysis (MCA)") +
+  unhcrthemes::theme_unhcr( font_size= 12)
+
+## plot2 with cluster 
+pclust <- factoextra::fviz_cluster(data.mca.hcpc,
+                                   # repel = TRUE,  # Avoid label overlapping
+                                   geom = "point",
+                                   show.clust.cent = TRUE, # Show cluster centers
+                                   palette = "jco", # Color palette see ?ggpubr::ggpar
+                                   ggtheme = theme_minimal(),
+                                   main = "Representation of population segment")+ 
+  unhcrthemes::theme_unhcr( font_size= 12) +
+  labs(caption = "This charts display the results of Hierarchical Clustering on Principal Components (HCPC)") 
+
+## plot3 with cluster proportion
+pclustprop <- ggplot(cluster, aes(x=clust)) +
+  geom_bar(aes(y = ..count.. / sapply(PANEL, FUN=function(x) sum(count[PANEL == x]))),
+           fill="#2a87c8",colour="#2a87c8") +
+  #facet_wrap(~subgov, ncol=4) +
+  guides(fill= "none") +
+  ylab("Frequency") +
+  scale_y_continuous(labels=scales::percent, breaks= seq(0, 1, by = 0.1)) +
+  coord_flip() +
+  labs( title = paste0("Share of each Population Segment in ", ctr),
+       x = "", 
+       y = "",
+       caption = paste0("Source: Data available in RIDL @ ", ridl, "") ) + 
+  unhcrthemes::theme_unhcr( font_size= 12)  +    
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank())
+
+## Now display the 3 charts within one single ggplot2 object with patchwork
+p <- pvar | (pclust / pclustprop)
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+---
+
+# 4.2 Description of each population segment
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+# aggregate modalitied description of each segment
+segments <- as.data.frame(data.mca.hcpc$desc.var$category$`1`) %>%
+  janitor::clean_names()  %>%
+  dplyr::mutate(mod = row.names(.))  %>%
+  dplyr::mutate(mod2 = gsub(".*=", "", mod)) %>%
+  dplyr::mutate(varcat = gsub("=.*", "", mod)) %>%
+  dplyr::mutate(segment = "Segment 1") %>%
+  rbind( as.data.frame(data.mca.hcpc$desc.var$category$`2`) %>%
+           janitor::clean_names()  %>%
+           dplyr::mutate(mod = row.names(.))  %>%
+           dplyr::mutate(mod2 = gsub(".*=", "", mod)) %>%
+           dplyr::mutate(varcat = gsub("=.*", "", mod)) %>%
+           dplyr::mutate(segment = "Segment 2") ) %>%
+  rbind( as.data.frame(data.mca.hcpc$desc.var$category$`3`) %>%
+           janitor::clean_names()  %>%
+           dplyr::mutate(mod = row.names(.))  %>%
+           dplyr::mutate(mod2 = gsub(".*=", "", mod)) %>%
+           dplyr::mutate(varcat = gsub("=.*", "", mod)) %>%
+           dplyr::mutate(segment = "Segment 3") ) %>%
+  rbind( as.data.frame(data.mca.hcpc$desc.var$category$`4`) %>%
+           janitor::clean_names()  %>%
+           dplyr::mutate(mod = row.names(.))  %>%
+           dplyr::mutate(mod2 = gsub(".*=", "", mod)) %>%
+           dplyr::mutate(varcat = gsub("=.*", "", mod)) %>%
+           dplyr::mutate(segment = "Segment 4") ) %>%
+  dplyr::mutate(mod_cla = mod_cla / 100)%>%
+  dplyr::mutate(cla_mod = cla_mod / 100)%>%
+  dplyr::mutate(global = global / 100) 
+
+# now plotting this 
+p <- ggplot(segments ) + 
+  geom_col(aes(x = reorder(mod2,mod_cla), 
+               y = cla_mod), fill="grey", width=0.5) + 
+  geom_col(aes(x = reorder(mod2,mod_cla), 
+               y = mod_cla), width=0.2) + 
+  geom_errorbar(aes(x = reorder(mod2,mod_cla), 
+                    y = global,
+                    ymin = global,
+                    ymax= global), 
+                width = .45) + 
+    scale_y_continuous(labels=scales::percent, breaks= seq(0, 1, by = 0.5)) +
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  coord_flip() +  
+  #facet_grid(varcat ~ ., scales = "free", space = "free") +
+   facet_grid(. ~ segment ) +
+  #facet_grid(vars(varcat), vars(segment)) +
+ # facet_grid(vars(varcat) ) +
+  unhcrthemes::theme_unhcr( font_size= 16)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank(),
+        strip.text.y = element_text(angle = 0),
+        axis.text.x = element_text(size = 10)) + 
+  labs(title = "Comparing the Characteristics of each Segments",
+       subtitle =  "Modalities Distribution per Segment" ,   
+       x = "",
+       y = "",
+       caption = paste0(str_wrap( 
+         "In Black: Modality in Class  is the percentage of records in that profile who have that modality", 
+         160), "\n",
+         str_wrap( 
+         "In Grey: Class in Modality is the percentage among all records who have that modality and who are in that the profile", 
+           160), "\n",
+         str_wrap( 
+         "As line: Global is the global percentage of all records who have that modality ",
+           160) ) ) 
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+
+# The variable modalities in each of the profiles can be __interpreted__ using the following information:  
+#   * _Cla/Mod_ is the pourcentage of records who have that modality and who are in that the profile (for instance: 50.3% of the cases who have a head of family who marrital status is single also belongs to profile 1) 
+#   * _Mod/Cla_ is the pourcentage of records in that profile who have that modality (for instance: 81.5% of the cases of profile  1 have a head of family who marrital status is single ) 
+#   * _Global_ is the global pourcentage of all records who have that modality (for instance: in all population, 51.67% of of the cases who have a head of family who marrital status is single.) 
+#   * _p-value_ provides an idea of the significant of the difference between Mod/Cla proportation & Global. If p-value is less than 0.05, then one category is significantly linked to another categories  
+#   * _v-test_ If the v-test is positive, it means that the category is over-expressed for the category and if the v-test is negative it means that the category is under-expressed for the category.What is interesting in the v-test is only the sign of the v-test. 
+#  
+#  Only variable modalities for which critical probability is below 0.02 are used."  
+```
+
+---
+
+# Chapter 5: UNHCR Response
+
+ 1. What main types of Assistance are being recorded?  
+ 
+ 2. How much Assistance Interventions have evolved over time?
+
+ 3. What is the specific profile of assisted by type of assistance?
+ 
+ 4. How much different assistance types are being Combined? 
+ 
+ 5. What the main characteristics of those who a registered but not assisted?
+
+---
+
+# 5.1 What are the main types of Assistance provided by Case?
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+p <- Assistance %>% 
+  #filter( AssistanceYear == 2020) %>% 
+  dplyr::left_join( y = Individual,
+                    by = c("IndividualID", "RegistrationGroupID")) %>% 
+  dplyr::group_by( RegistrationGroupID, AssistanceSub   ) %>% 
+  dplyr::summarise(n = dplyr::n()) %>% 
+  filter( ! (is.na(RegistrationGroupID) ))   %>% 
+  filter( ! (is.na(AssistanceSub) ))  %>% 
+  dplyr::group_by( AssistanceSub  ) %>% 
+  dplyr::summarise(uniquecase = n())   %>% 
+  
+  dplyr::left_join(Assistance %>% 
+                     # filter( AssistanceYear == 2020) %>% 
+                     dplyr::left_join( y = Individual,
+                                       by = c("IndividualID", "RegistrationGroupID")) %>% 
+                     dplyr::group_by( RegistrationGroupID, AssistanceSub   ) %>% 
+                     dplyr::summarise(n = dplyr::n()) %>% 
+                     filter( ! (is.na(AssistanceSub) ))  %>% 
+                     filter( ! (is.na(RegistrationGroupID) ))   %>% 
+                     dplyr::group_by( AssistanceSub  ) %>% 
+                     dplyr::summarise(totalind = sum(n)) )  %>% 
+  dplyr::mutate(avgindpercase = totalind/uniquecase)     %>%
+  dplyr::mutate(totalcase = nlevels(as.factor(Individual$RegistrationGroupID)))  %>%
+  dplyr::mutate(assistcover = uniquecase/totalcase)     %>%
+  dplyr::filter(assistcover >= 0.01 )     %>%
+  mutate(uniquecase = as.numeric(uniquecase), 
+         nRound =  ifelse(uniquecase > 1000, 
+                          paste(scales::label_number_si(accuracy = 0.1)(uniquecase)),
+                          as.character(uniquecase) ) ) %>%  
+  ggplot( aes(x = reorder(AssistanceSub,uniquecase), 
+              y = uniquecase )) + 
+  geom_bar(stat = "identity", 
+           fill = "#0072bc") + 
+  coord_flip() + 
+  scale_y_continuous( label = scales::label_number_si() ) + 
+  ## Position label differently in the bar in white - outside bar in black
+  geom_label( data =   function(x) subset(x, uniquecase < max(uniquecase) / 1.5),
+              aes(x = reorder(AssistanceSub, uniquecase),
+                  y = uniquecase,
+                  label= nRound),
+              hjust = -0.1 ,
+              vjust = 0.5, 
+              colour = "black", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +  
+  
+  geom_label( data =   function(x) subset(x, uniquecase >= max(uniquecase) / 1.5),
+              aes(x = reorder(AssistanceSub, uniquecase),
+                  y = uniquecase,
+                  label= nRound),
+              hjust = 1.1 ,
+              vjust = 0.5, 
+              colour = "white", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +   
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = paste0("What are the main type of recorded Assistance in ", ctr, "?"),
+       subtitle = paste0("There's a total of  ", scales::label_comma()(nrow(Assistance)),
+                         " assistance records, ",
+                         scales::label_comma(accuracy = .1)(nrow(RegistrationGroupall %>% filter(got_assistance== "FALSE")) / nrow(RegistrationGroupall ) *100) ,
+                         " % of cases have no single associated records of assistance"),   
+       x = "",
+       y = "",
+       caption = paste0("Source: Data available in RIDL @ ", ridl, "\n Record are counted as single occurence per type at case level.") ) 
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+```
+
+---
+
+# 5.2  How much Assistance Interventions have evolved over time?
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+topAssistanceSub <- Assistance %>% 
+                    dplyr::left_join( y = Individual,
+                                       by = c("IndividualID", "RegistrationGroupID")) %>% 
+                    dplyr::group_by( RegistrationGroupID, AssistanceSub   ) %>% 
+                    dplyr::summarise(n = dplyr::n()) %>% 
+                    dplyr::filter( ! (is.na(AssistanceSub) ))  %>% 
+                    dplyr::filter( ! (is.na(RegistrationGroupID) ))   %>% 
+                    dplyr::group_by( AssistanceSub  ) %>% 
+                    dplyr::summarise(uniquecase = dplyr::n())  %>%    
+                    dplyr::arrange(desc(uniquecase)) %>%
+                    head(15) %>%
+                    dplyr::select(AssistanceSub)  |> 
+                    dplyr::pull() 
+
+p <- Assistance %>%   
+  dplyr::filter(AssistanceSub  %in%  topAssistanceSub) %>%
+  dplyr::left_join( y = Individual,
+                    by = c("IndividualID", "RegistrationGroupID")) %>% 
+  dplyr::group_by( RegistrationGroupID, AssistanceSub, AssistanceYear   ) %>% 
+  dplyr::summarise(n = dplyr::n())  %>% 
+  filter( ! (is.na(RegistrationGroupID) ))   %>% 
+  filter( ! (is.na(AssistanceSub) ))  %>% 
+  dplyr::group_by( AssistanceSub, AssistanceYear  ) %>% 
+  dplyr::summarise(uniquecase = n())  %>% 
+  
+  dplyr::left_join(
+    Assistance %>% 
+      dplyr::filter(AssistanceSub  %in%  topAssistanceSub ) %>%
+      dplyr::left_join( y = Individual,
+                        by = c("IndividualID", "RegistrationGroupID")) %>% 
+      dplyr::group_by( RegistrationGroupID, AssistanceSub, AssistanceYear    ) %>% 
+      dplyr::summarise(n = dplyr::n()) %>% 
+      filter( ! (is.na(AssistanceSub) ))  %>% 
+      filter( ! (is.na(RegistrationGroupID) ))   %>% 
+      dplyr::group_by( AssistanceSub, AssistanceYear   ) %>% 
+      dplyr::summarise(totalind = sum(n))
+  ) %>% 
+  dplyr::mutate(avgindpercase = totalind/uniquecase)     %>%
+  dplyr::mutate(totalcase = nlevels(as.factor(Individual$RegistrationGroupID)))  %>%
+  dplyr::mutate(assistcover = uniquecase/totalcase)    %>%
+  dplyr::filter(AssistanceYear >= 2019 )     %>%
+  dplyr::filter( !(is.na(AssistanceYear)) )     %>%
+  mutate(uniquecase = as.numeric(uniquecase), 
+         nRound =  ifelse(uniquecase > 1000, 
+                          paste(scales::label_number_si(accuracy = 0.1)(uniquecase)),
+                          as.character(uniquecase) ) ) %>%  
+  ggplot( aes(x = reorder(AssistanceSub,uniquecase), 
+              y = uniquecase )) + 
+  geom_bar(stat = "identity", 
+           fill = "#0072bc") + 
+  coord_flip() + 
+  facet_grid(. ~ AssistanceYear  ) +
+  scale_y_continuous( label = scales::label_number_si() ) + 
+  ## Position label differently in the bar in white - outside bar in black
+  geom_label( data =   function(x) subset(x, uniquecase < max(uniquecase) / 1.5),
+              aes(x = reorder(AssistanceSub, uniquecase),
+                  y = uniquecase,
+                  label= nRound),
+              hjust = -0.1 ,
+              vjust = 0.5, 
+              colour = "black", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +  
+  
+  geom_label( data =   function(x) subset(x, uniquecase >= max(uniquecase) / 1.5),
+              aes(x = reorder(AssistanceSub, uniquecase),
+                  y = uniquecase,
+                  label= nRound),
+              hjust = 1.1 ,
+              vjust = 0.5, 
+              colour = "white", 
+              fill = NA, 
+              label.size = NA, 
+              family = "Lato", 
+              size = 4   ) +   
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(title = paste0("How Assistance assistance intervention changed in ", ctr, "?"),
+       subtitle = paste0("Evolution since 2019 for top 15 most frequent types of intervention"),   
+       x = "",
+       y = "",
+       caption = paste0("Source: Data available in RIDL @ ", ridl, "\n Record are counted as single occurence per type at case level.") ) 
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+
+---
+
+# 5.3 How different type of Assistance are combined?
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+topAssistanceSub <- as.vector(as.data.frame(Assistance %>% 
+  dplyr::left_join( y = Individual,
+                     by = c("IndividualID", "RegistrationGroupID")) %>% 
+  dplyr::group_by( RegistrationGroupID, AssistanceSub   ) %>% 
+  dplyr::summarise(n = dplyr::n()) %>% 
+  filter( ! (is.na(AssistanceSub) ))  %>% 
+  filter( ! (is.na(RegistrationGroupID) ))   %>% 
+  dplyr::group_by( AssistanceSub  ) %>% 
+  dplyr::summarise(uniquecase = dplyr::n())  %>%    
+  dplyr::arrange(desc(uniquecase)) %>%
+  head(15) %>%
+  dplyr::select(AssistanceSub)   )) |>
+  as.data.frame() |> 
+  dplyr::pull()
+
+d1 <- Assistance %>% 
+  dplyr::filter(AssistanceSub  %in%  topAssistanceSub ) %>%
+  #filter( AssistanceYear == 2020) %>% 
+  dplyr::left_join( y = Individual,
+                    by = c("IndividualID", "RegistrationGroupID")) %>% 
+  dplyr::group_by( RegistrationGroupID, AssistanceSub   ) %>% 
+  dplyr::summarise(n = dplyr::n()) %>% 
+  filter( ! (is.na(RegistrationGroupID) ))  %>%
+  tidyr::pivot_wider(names_from  = AssistanceSub,
+                     values_from = n)
+d <- d1  %>% 
+  replace(is.na(.), 0)
+  ## Remove identifiers
+d2 <- d  %>%
+  dplyr::ungroup() %>%
+  dplyr::select( - 1 )  
+
+corrMat <- round(cor(d2), 1)
+p.mat <- ggcorrplot::cor_pmat(d2)
+#corrr::correlate(d2) 
+
+p <- ggcorrplot::ggcorrplot(  corrMat  ,
+           hc.order = TRUE,
+           type = "lower",
+            method = "circle",
+           outline.col = "white",
+           ggtheme = ggplot2::theme_gray,
+           colors = c("#6D9EC1", "white", "#E46726") ,
+           ## cross if not significant
+            p.mat = p.mat) + 
+   guides(fill= "none") +
+  unhcrthemes::theme_unhcr( font_size= 12)  +  
+   theme(axis.text.x = element_text(size = 8, angle = 40,  hjust=1),
+        axis.text.y = element_text(size = 8) ) +
+  labs(
+    y = "",
+    x = " ",
+    title = paste0("How much different types of Assistance aggregated at Case level are associated in ", ctr, "?"),
+    subtitle = str_wrap( 
+      "Correlation analysis: Red color indicate a positive association, while blue a negative one. The bigger the dot, the stronger the association, cross indicates the absence of significative association",
+      180) ,
+    caption = paste0("Source: Data available in RIDL @ ", ridl, "")
+  )
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+# 
+# # Create a tidy data frame of correlations
+# tidy_cors <-  d2 %>% 
+#   corrr::correlate()  %>% 
+#   corrr::stretch()
+# 
+# # Convert correlations stronger than some value
+# # to an undirected graph object
+# graph_cors <- tidy_cors %>%
+#   filter(abs(r) > .2) %>%
+#   igraph::graph_from_data_frame(directed = FALSE)
+# 
+# # Plot
+# ggraph(graph_cors) +
+#   geom_edge_link(aes(edge_alpha = abs(r),
+#                      edge_width = abs(r), 
+#                      color = r)) +
+#   guides(edge_alpha = "none", 
+#          edge_width = "none") +
+#   scale_edge_colour_gradientn(limits = c(-1, 1), 
+#                               # colors = c("firebrick2",
+#                               #            "dodgerblue2")
+#                               colors = c("blue", "gray90",  "red")
+#   ) +
+#   geom_node_point(color = "gray90", 
+#                   size = 7) +
+#   geom_node_text(aes(label = name), 
+#                  repel = TRUE) + 
+#   unhcrthemes::theme_unhcr( font_size= 18)  +  
+#   theme(panel.grid.major.x  = element_blank(), 
+#         panel.grid.major.y  = element_blank(), 
+#         panel.grid.minor = element_blank(), 
+#         axis.text.x =  element_blank(), 
+#         axis.text.y = element_blank(), 
+#         legend.key.height= unit(0.5, 'cm'),
+#         legend.key.width= unit(3, 'cm') ) +
+#   labs(
+#     y = "",
+#     x = " ",
+#     title = paste0("How much different types of Assistance aggregated at Case level are associated in ", ctr, "?"),
+#     subtitle = paste0("Correlation analysis: Red color indicate a positive association, while blue a negative one "),
+#     caption = paste0("Source: Data available in RIDL @ ", ridl, 
+#                      "")
+#   )
+
+```
+
+---
+
+# 5.3 Targeting of cash assistance 
+
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+#names(RegistrationGroupall)
+model_logitCash <- glm(assistance_cash_bol ~
+          ## test predictors below
+                      group_size1 + 
+                      ratio_female_cat + 
+                     ratio_dependant_cat + 
+                     sex_fp + 
+                     age_avg_cat + 
+                     age_sd_cat + 
+                     divorced_separated_widow + 
+                     single_adult + 
+                     married_engaged +
+                     single_minor + 
+                     child_at_risk +
+                     disability + 
+                     serious_medical_condition +
+                     sgbv,  
+                     
+                   data= RegistrationGroupall, 
+                   family = binomial)  %>% 
+  ## stepwise indicator selection
+  # http://www.sthda.com/english/articles/36-classification-methods-essentials/150-stepwise-logistic-regression-essentials-in-r/
+  MASS::stepAIC(trace = FALSE) 
+
+#broom::tidy(model_logit)
+
+
+# https://www.youtube.com/watch?v=C4N3_XJJ-jU
+far <- model_logitCash$null.deviance/-2 ## McFadden's Pseudo R2
+ll <- model_logitCash$deviance/-2 ## log -likelihood for the fancy model
+r2 <- (far -ll) / far ## Pseudo R2
+pval <-  1- pchisq(2*(ll- far), df=(length(model_logitCash$coefficients)-1))  # pvalue
+
+tidy_forestCash <-
+  model_logitCash %>%
+  # perform initial tidying of the model
+  broom.helpers::tidy_and_attach(exponentiate = TRUE, conf.int = TRUE) %>%
+  # adding in the reference row for categorical variables
+  broom.helpers::tidy_add_reference_rows() %>%
+  # adding a reference value to appear in plot
+  broom.helpers::tidy_add_estimate_to_reference_rows() %>%
+  # adding the variable labels
+  broom.helpers::tidy_add_term_labels() %>%
+  # removing intercept estimate from model
+  broom.helpers::tidy_remove_intercept()
+
+
+
+tidy_forestCash2 <- tidy_forestCash %>%
+  # removing variable if pvalue are more than 0.4
+  dplyr::filter( p.value < 0.3)
+
+#tidy_forest
+
+p <- tidy_forestCash2 %>%
+  mutate(
+    plot_label = paste(var_label, label, sep = ":") %>% 
+      forcats::fct_inorder() %>%
+      forcats::fct_rev()
+  ) %>%
+  ggplot(aes(x = plot_label, 
+             y = estimate, 
+             ymin = conf.low, 
+             ymax = conf.high, 
+             color = variable)) +
+  geom_hline(yintercept = 1, linetype = 2) +
+  geom_pointrange() +
+  coord_flip() +
+  theme(legend.position = "none") +    
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        axis.text.y = element_text(size = 10)) +
+  labs(
+    y = "Odds Ratio",
+    x = " ",
+    title = "What are the criteria predicting those receiving cash assistance?",
+    subtitle = paste0("Regression analysis based on records in ", ctr, " analysed at case level."),
+    caption = paste0("Source: Data available in RIDL @ ", ridl,"\n",
+              str_wrap( "An odds ratio measures the association between a predictor variable (x) and the outcome variable (y). It represents the ratio of the odds that an event will occur (event = 1) given the presence of the predictor x (x = 1), compared to the odds of the event occurring in the absence of that predictor (x = 0).",180),
+              "\n",
+              str_wrap( paste0("McFadden's Pseudo R2 is ", far, 
+                          "; log -likelihood for the fancy model is ", ll,
+                          "; Pseudo R2 is ", r2,
+                          " and its p-value is ", pval),180) ))
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+---
+
+# 5.4 Who did not get any single assistance record?
+ 
+```{r   layout='Title and Content', ph=officer::ph_location_type(type="body")}
+# names(RegistrationGroupall)
+# table( RegistrationGroupall$got_assistance, useNA = "ifany")
+model_logit <- glm(got_assistance ~ 
+          ## test predictors below
+                      group_size1 + 
+                      ratio_female_cat + 
+                     ratio_dependant_cat + 
+                     sex_fp + 
+                     age_avg_cat + 
+                     age_sd_cat + 
+                     divorced_separated_widow + 
+                     single_adult + 
+                     married_engaged +
+                     single_minor + 
+                     child_at_risk +
+                     disability + 
+                     serious_medical_condition +
+                     sgbv,  
+                   data= RegistrationGroupall, 
+                   family = binomial)  %>% 
+  ## stepwise indicator selection
+  # http://www.sthda.com/english/articles/36-classification-methods-essentials/150-stepwise-logistic-regression-essentials-in-r/
+  MASS::stepAIC(trace = FALSE) 
+
+#broom::tidy(model_logit)
+
+
+
+
+## Key indicator on model
+# https://www.youtube.com/watch?v=C4N3_XJJ-jU
+far <- model_logit$null.deviance/-2 ## McFadden's Pseudo R2
+ll <- model_logit$deviance/-2 ## log -likelihood for the fancy model
+r2 <- (far -ll) / far ## Pseudo R2
+pval <-  1- pchisq(2*(ll- far), df=(length(model_logit$coefficients)-1))  # pvalue
+
+
+tidy_forest <-
+  model_logit %>%
+  # perform initial tidying of the model
+  broom.helpers::tidy_and_attach(exponentiate = TRUE, conf.int = TRUE) %>%
+  # adding in the reference row for categorical variables
+  broom.helpers::tidy_add_reference_rows() %>%
+  # adding a reference value to appear in plot
+  broom.helpers::tidy_add_estimate_to_reference_rows() %>%
+  # adding the variable labels
+  broom.helpers::tidy_add_term_labels() %>%
+  # removing intercept estimate from model
+  broom.helpers::tidy_remove_intercept()
+#tidy_forest
+
+
+tidy_forest2 <- tidy_forest %>%
+  # removing variable if pvalue are more than 0.4
+  dplyr::filter( p.value < 0.3)
+
+
+p <- tidy_forest2 %>%
+  mutate(
+    plot_label = paste(var_label, label, sep = ":") %>% 
+      forcats::fct_inorder() %>%
+      forcats::fct_rev() ) %>%
+  ggplot(aes(x = plot_label, 
+             y = estimate, 
+             ymin = conf.low, 
+             ymax = conf.high, 
+             color = variable)) +
+  geom_hline(yintercept = 1, linetype = 2) +
+  geom_pointrange() +
+  coord_flip() +
+  theme(legend.position = "none") +    
+  geom_hline(yintercept = 0, size = 1.1, colour = "#333333") +
+  unhcrthemes::theme_unhcr( font_size= 18)  +  
+  theme(panel.grid.major.x  = element_line(color = "#cbcbcb"), 
+        panel.grid.major.y  = element_blank(), 
+        panel.grid.minor = element_blank(),  
+        axis.text.y = element_text(size = 10)) +
+  labs(
+    y = "Odds Ratio",
+    x = " ",
+    title = "Factors predicting Cases that did not get records Assistance",
+    subtitle = paste0("Regression analysis "),
+    caption = paste0("Source: Data available in RIDL @ ", ridl, "\n",
+         str_wrap( "An odds ratio measures the association between a predictor variable (x) and the outcome variable (y). It represents the ratio of the odds that an event will occur (event = 1) given the presence of the predictor x (x = 1), compared to the odds of the event occurring in the absence of that predictor (x = 0).",180),"\n",
+              "\n",
+              str_wrap( paste0("McFadden's Pseudo R2 is ", far, 
+                          "; log -likelihood for the fancy model is ", ll,
+                          "; Pseudo R2 is ", r2,
+                          " and its p-value is ", pval),180) ))
+
+
+rvg::dml(ggobj = p, fonts = list(serif = 'Lato'))
+```

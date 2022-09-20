@@ -1,0 +1,429 @@
+---
+title: "Analyse Specific Population Segment in proGres"
+date: " `r format(Sys.Date(),  '%d %B %Y')`"
+output:
+  unhcrdown::pptx_slides
+params:
+  ridl: "Mexico"
+  country: "Mexico"
+author: "`r params$ridl`"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      warning = FALSE,
+                      collapse = FALSE,
+                      comment = "#>",
+                      # fig.width = 5.5, fig.height = 4,
+                      #fig.retina = 2, 
+                     # fig.width = 9,
+                     # fig.asp = 0.618,
+                     # fig.align = "center",
+                     # dev = "ragg_png",
+                     # out.width = "90%", 
+                      fig.cap = TRUE
+                     )
+options(scipen = 999) # turn-off scientific notation like 1e+48
+set.seed(1)
+
+library(officedown)
+library(unhcrthemes)
+library(ggplot2)
+library(rvg)
+library(tidyverse)
+library(scales)
+library(lubridate)
+library(ggfittext)
+library(ggrepel)
+library(gridExtra)
+library(stringr) 
+library(ckanr)
+library(fs)
+library(patchwork)
+
+ ## Multiple correspondance analysis and classification
+library(FactoMineR)
+library(factoextra)
+#library(corrr)
+#library(igraph)
+#library(ggraph)
+library(MASS)
+
+#library(hcrdata)
+library(broom.helpers)
+
+library(proGresAnalysis)
+#install.packages("SocialPosition")
+#library(SocialPosition)
+
+
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
+
+```
+
+```{r  }
+## The 2 lines below are for the demo - please comment the 2 below 
+
+ctr <- params$country
+ridl  <- params$ridl 
+
+
+#progresobj <- data_load(dataraw = "data-raw")
+
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+ 
+progres <- data_recode(progresobj = progresobj,
+                       ctr = "Ecuador")
+
+```
+
+#  5 High Level Key Questions
+
+ * __Reach-out__: What are the main profile of people registering with UNHCR
+ 
+ * __Inclusion__: What could be main obstacles to inclusion in host country for those who registered?
+ 
+ * __Protection__: What are the main Protection Risks and Needs among those registered?
+
+ * __Segmentation__: What are the main homogeneous statistical profiles among those registered?
+
+ * __Assistance__: What Responses are being provided and to Whom?
+
+
+
+
+## Chapter 1: Profile of people registering with UNHCR
+
+ 1. What subset of the total population does it represent?
+ 
+ 2. How much the profiles of refugees differs from the population of local population? 
+ 
+ 3. How much we know about their Intention?
+
+
+### 1.1 Registration coverage
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_reach_registration (progres = progres , 
+                         ctr = "Ecuador", 
+                         ridl = "Ecuador",
+                                    thisyear = 2021) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+```
+
+### 1.2 Age Pyramid
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_reach_agepyr (progres = progres , 
+                         ctr = "Ecuador", 
+                         ridl = "data-should-be-on-ridl" ,
+                         thisyear = 2021) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+### 1.3 Willing To Return
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_reach_return(progres  = progres , 
+                         ctr = "Ecuador", 
+                         ridl = "data-should-be-on-ridl" ,
+                                    thisyear = 2021 ) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+```
+
+## Chapter 2: Inclusion Capability
+
+ 1. How does the education enrollment of the refugee population compare with that of the local host population?
+ 
+ 2. How does the education attainment of the refugee population compare with that of the local host population?
+ 
+ 3. How does the professional profile composition of the refugee population compare with that of the local host population? 
+ 
+ 4. What are the main Professional Trajectory within the Refugee Population?
+ 
+
+
+### 2.1 Education Enrollment
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_incl_educ_enroll (progres = progres,
+                                    ctr = "Ecuador" ,
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 ) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+### 2.2 Education Attainment
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_incl_educ_attain(progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 )  -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+### 2.3 Occupation Profile
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_incl_occup(progres = progres ,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 )  -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+###  2.4 Work Trajectory
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_incl_work(progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 ) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+## Chapter 3:  Main Protection Risk and Needs 
+
+ 1. __Gender__: Is there a higher-than-average percentage of women within registered case? 
+ 
+ 2. __Dependency__: Is there a higher-than-average percentage of Children and Older persons within registered case? 
+
+ 3. __Documentation__: What is the share of registered population with valid Document?
+
+ 4. __Specific Needs__: What the main Specific Needs 
+ 
+ 5. __Risk__: How combination of needs are combined?
+  
+
+
+### 3.1 How well documented is the population?
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_prot_doc (progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 ) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+```
+
+### 3.2 Women & Dependency  Ratio 
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+
+plot_prot_ratio (progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 ) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+### 3.3 Specific Need  Sub Category by case
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_prot_spneedcat  (progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 ) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+### 3.4 Association of specific needs
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+
+plot_prot_spneedass (progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 ) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+## Chapter 4: Population Segmentation
+
+ * Since the 70's, Social scientist have developed __data exploratory__ techniques that allow to discover statistical segments among a specific population. Those techniques are commonly used in __marketing studies__.
+
+ * To do that, Clustering analysis aims to group a set of records in such a way that records in the same group are more similar to each other than to those in other groups. [Multiple Correspondence Analysis (MCA)](https://en.wikipedia.org/wiki/Multiple_correspondence_analysis) together with [Hierarchical Classification on Principle Components](http://factominer.free.fr/classical-methods/hierarchical-clustering-on-principal-components.html) can be used to process together multiple categorical data  in order to detect and represent the __underlying structures__ in a data set. 
+
+ * This aims at generating induction rather than testing an hypothesis according to model. The resulting segments should be interpreted as broad categories (rather than a criteria-based classification) that can then help informing programme design and subsequent __theories of change__ for each segments.
+ 
+
+
+
+### 4.1 Variables to segment the population
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+cluster <- plot_segment_var(progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 )
+
+cluster[1]  -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+### 4.2 Description of each population segment
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+# plot_segment_group(progres = progres,
+#                                     ctr = "Ecuador",
+#                                     ridl = "data-should-be-on-ridl",
+#                                     thisyear = 2021 ) 
+```
+
+## Chapter 5: Assistance & Targeting
+
+ 1. What main types of Assistance are being recorded?  
+ 
+ 2. How much Assistance Interventions have evolved over time?
+
+ 3. What is the specific profile of assisted by type of assistance?
+ 
+ 4. How much different assistance types are being Combined? 
+ 
+ 5. What the main characteristics of those who a registered but not assisted?
+
+
+### 5.1 What are the main types of Assistance provided by Case?
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_assist_type (progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 )  -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+```
+
+### 5.2  How much Assistance Interventions have evolved over time?
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+plot_assist_evol(progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 ) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+### 5.3 How different type of Assistance are combined?
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+plot_assist_combin(progres = progres,
+                                    ctr = "Ecuador",
+                                    ridl = "data-should-be-on-ridl",
+                                    thisyear = 2021 ) -> p
+
+dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+### 5.4 Targeting of cash assistance 
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+
+# plot_assist_cashtarget(progres = progres,
+#                                     ctr = "Ecuador",
+#                                     ridl = "data-should-be-on-ridl",
+#                                     thisyear = 2021 ) -> p
+
+#   dml(ggobj = p, fonts = list(serif = 'Lato'))
+```
+
+### 5.5 Who did not get any single assistance record?
+
+
+```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
+
+# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+# plot_assist_nothing (progres = progres,
+#                                     ctr = "Ecuador",
+#                                     ridl = "data-should-be-on-ridl",
+#                                     thisyear = 2021 )  -> p
+
+#   dml(ggobj = p, fonts = list(serif = 'Lato'))
+
+```
+
+ 
