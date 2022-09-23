@@ -4,7 +4,7 @@ date: " `r format(Sys.Date(),  '%d %B %Y')`"
 output:
   unhcrdown::pptx_slides
 params:
-  ridl: "Mexico"
+  ridl: "mex-registration-data-2022-09"
   country: "Mexico"
 author: "`r params$ridl`"
 ---
@@ -70,13 +70,10 @@ showtext::showtext_auto(FALSE)
 ctr <- params$country
 ridl  <- params$ridl 
 
-
-#progresobj <- data_load(dataraw = "data-raw")
-
-progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
- 
-progres <- data_recode(progresobj = progresobj,
-                       ctr = "Ecuador")
+## load and recode the data
+#proGresAnalysis::data_get(ridldataset = ridl, dataraw = "data-raw")
+progresobj <- data_load(dataraw = "data-raw")
+progres <- data_recode(progresobj = progresobj, ctr = ctr)
 
 ```
 
@@ -93,9 +90,9 @@ progres <- data_recode(progresobj = progresobj,
  * __Assistance__: What Responses are being provided and to Whom?
 
 
+---
 
-
-## Chapter 1: Profile of people registering with UNHCR
+# Chapter 1: Profile of people registering with UNHCR
 
  1. What subset of the total population does it represent?
  
@@ -103,50 +100,55 @@ progres <- data_recode(progresobj = progresobj,
  
  3. How much we know about their Intention?
 
+---
 
 ### 1.1 Registration coverage
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_reach_registration (progres = progres , 
-                         ctr = "Ecuador", 
-                         ridl = "Ecuador",
+                         ctr = ctr, 
+                         ridl =  ridl,
                                     thisyear = 2021) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 ```
+
+---
 
 ### 1.2 Age Pyramid
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_reach_agepyr (progres = progres , 
-                         ctr = "Ecuador", 
-                         ridl = "data-should-be-on-ridl" ,
+                         ctr = ctr, 
+                         ridl = ridl ,
                          thisyear = 2021) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
+
+---
 
 ### 1.3 Willing To Return
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_reach_return(progres  = progres , 
-                         ctr = "Ecuador", 
-                         ridl = "data-should-be-on-ridl" ,
+                         ctr = ctr, 
+                         ridl = ridl ,
                                     thisyear = 2021 ) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 ```
 
-## Chapter 2: Inclusion Capability
+---
+
+# Chapter 2: Inclusion Capability
 
  1. How does the education enrollment of the refugee population compare with that of the local host population?
  
@@ -155,68 +157,74 @@ dml(ggobj = p, fonts = list(serif = 'Lato'))
  3. How does the professional profile composition of the refugee population compare with that of the local host population? 
  
  4. What are the main Professional Trajectory within the Refugee Population?
- 
 
+---
 
 ### 2.1 Education Enrollment
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_incl_educ_enroll (progres = progres,
-                                    ctr = "Ecuador" ,
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr ,
+                                    ridl = ridl,
                                     thisyear = 2021 ) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
 
-### 2.2 Education Attainment
+---
+
+## 2.2 Education Attainment
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_incl_educ_attain(progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 )  -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
 
-### 2.3 Occupation Profile
+---
+
+## 2.3 Occupation Profile
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_incl_occup(progres = progres ,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 )  -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
+
+---
 
 ###  2.4 Work Trajectory
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
-plot_incl_work(progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
-                                    thisyear = 2021 ) -> p
-
-dml(ggobj = p, fonts = list(serif = 'Lato'))
+# plot_incl_work(progres = progres,
+#                                     ctr = ctr,
+#                                     ridl = ridl,
+#                                    
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+# showtext::showtext_auto(FALSE)  thisyear = 2021 ) -> p
+# 
+# dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
 
-## Chapter 3:  Main Protection Risk and Needs 
+---
+
+# Chapter 3:  Main Protection Risk and Needs 
 
  1. __Gender__: Is there a higher-than-average percentage of women within registered case? 
  
@@ -229,72 +237,77 @@ dml(ggobj = p, fonts = list(serif = 'Lato'))
  5. __Risk__: How combination of needs are combined?
   
 
+---
 
-### 3.1 How well documented is the population?
+## 3.1 How well documented is the population?
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_prot_doc (progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 ) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 ```
 
-### 3.2 Women & Dependency  Ratio 
+---
+
+## 3.2 Women & Dependency  Ratio 
 
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
-
 plot_prot_ratio (progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 ) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
 
-### 3.3 Specific Need  Sub Category by case
+---
+
+## 3.3 Specific Need  Sub Category by case
 
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_prot_spneedcat  (progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 ) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
 
-### 3.4 Association of specific needs
+
+---
+
+## 3.4 Association of specific needs
 
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
-
 plot_prot_spneedass (progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 ) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
 
-## Chapter 4: Population Segmentation
+
+---
+
+# Chapter 4: Population Segmentation
 
  * Since the 70's, Social scientist have developed __data exploratory__ techniques that allow to discover statistical segments among a specific population. Those techniques are commonly used in __marketing studies__.
 
@@ -303,40 +316,43 @@ dml(ggobj = p, fonts = list(serif = 'Lato'))
  * This aims at generating induction rather than testing an hypothesis according to model. The resulting segments should be interpreted as broad categories (rather than a criteria-based classification) that can then help informing programme design and subsequent __theories of change__ for each segments.
  
 
+---
 
-
-### 4.1 Variables to segment the population
-
+## 4.1 Variables to segment the population
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 cluster <- plot_segment_var(progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 )
 
-cluster[1]  -> p
+cluster[[1]]  -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
 
-### 4.2 Description of each population segment
+
+---
+
+## 4.2 Description of each population segment
 
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 # plot_segment_group(progres = progres,
-#                                     ctr = "Ecuador",
-#                                     ridl = "data-should-be-on-ridl",
-#                                     thisyear = 2021 ) 
+#                                     ctr = ctr,
+#                                     ridl = ridl,
+#                                     thisyear = 2021 )  -> p
+
+#dml(ggobj = p, fonts = list(serif = 'Lato'))
 ```
 
-## Chapter 5: Assistance & Targeting
+
+---
+
+# Chapter 5: Assistance & Targeting
 
  1. What main types of Assistance are being recorded?  
  
@@ -349,81 +365,80 @@ dml(ggobj = p, fonts = list(serif = 'Lato'))
  5. What the main characteristics of those who a registered but not assisted?
 
 
-### 5.1 What are the main types of Assistance provided by Case?
 
+
+---
+
+## 5.1 What are the main types of Assistance provided by Case?
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_assist_type (progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 )  -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 ```
 
-### 5.2  How much Assistance Interventions have evolved over time?
+---
 
+## 5.2  How much Assistance Interventions have evolved over time?
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_assist_evol(progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 ) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
-
 ```
 
-### 5.3 How different type of Assistance are combined?
 
+---
+
+## 5.3 How different type of Assistance are combined?
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
 plot_assist_combin(progres = progres,
-                                    ctr = "Ecuador",
-                                    ridl = "data-should-be-on-ridl",
+                                    ctr = ctr,
+                                    ridl = ridl,
                                     thisyear = 2021 ) -> p
 
+# turn off the automatic use of showtext functionality, so that the dml function can works properly
+showtext::showtext_auto(FALSE) 
 dml(ggobj = p, fonts = list(serif = 'Lato'))
 
 ```
 
-### 5.4 Targeting of cash assistance 
 
+---
+
+## 5.4 Targeting of cash assistance 
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
-
 # plot_assist_cashtarget(progres = progres,
-#                                     ctr = "Ecuador",
-#                                     ridl = "data-should-be-on-ridl",
+#                                     ctr = ctr,
+#                                     ridl = ridl,
 #                                     thisyear = 2021 ) -> p
 
 #   dml(ggobj = p, fonts = list(serif = 'Lato'))
 ```
 
-### 5.5 Who did not get any single assistance record?
+---
 
+## 5.5 Who did not get any single assistance record?
 
 ```{r  layout='Title and Content', ph=officer::ph_location_type(type="body")}
-
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 # plot_assist_nothing (progres = progres,
-#                                     ctr = "Ecuador",
-#                                     ridl = "data-should-be-on-ridl",
+#                                     ctr = ctr,
+#                                     ridl = ridl,
 #                                     thisyear = 2021 )  -> p
 
 #   dml(ggobj = p, fonts = list(serif = 'Lato'))
-
 ```
 
  
