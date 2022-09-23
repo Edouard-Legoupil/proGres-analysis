@@ -8,7 +8,7 @@
 #' @export 
 
 #' @examples
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
 #' progres <- data_recode(progresobj = progresobj,
 #'                        ctr = "Ecuador")
 #' 

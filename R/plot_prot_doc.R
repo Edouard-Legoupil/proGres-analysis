@@ -13,8 +13,8 @@
 
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_prot_doc (progres = progres,
 #'                                     ctr = "Ecuador",
 #'                                     ridl = "data-should-be-on-ridl",
@@ -137,8 +137,8 @@ p <- Individual |>
 
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' 
 #' plot_prot_ratio (progres = progres,
 #'                                     ctr = "Ecuador",
@@ -329,8 +329,8 @@ return(p)
 
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' 
 #' plot_prot_spneedass (progres = progres,
 #'                                     ctr = "Ecuador",
@@ -471,8 +471,8 @@ return(p)
 
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_prot_spneedcat  (progres = progres,
 #'                                     ctr = "Ecuador",
 #'                                     ridl = "data-should-be-on-ridl",

@@ -13,8 +13,8 @@
 
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_reach_agepyr (progres = progres , 
 #'                          ctr = "Ecuador", 
 #'                          ridl = "data-should-be-on-ridl" ,
@@ -153,8 +153,8 @@ p<- ggplot(data = pyramid_data1, aes(x = Age,
 
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_reach_registration (progres = progres , 
 #'                          ctr = "Ecuador", 
 #'                          ridl = "Ecuador",
@@ -272,8 +272,8 @@ return(p)
 #'
 
 #' @examples
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_reach_return(progres  = progres , 
 #'                          ctr = "Ecuador", 
 #'                          ridl = "data-should-be-on-ridl" ,

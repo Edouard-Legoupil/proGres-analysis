@@ -12,8 +12,8 @@
 #'
 
 #' @examples
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_incl_educ_attain(progres = progres,
 #'                                     ctr = "Ecuador",
 #'                                     ridl = "data-should-be-on-ridl",
@@ -165,8 +165,8 @@ return(p)
 #'
 
 #' @examples
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_incl_educ_enroll (progres = progres,
 #'                                     ctr = "Ecuador" ,
 #'                                     ridl = "data-should-be-on-ridl",
@@ -289,8 +289,8 @@ return(p)
 
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_incl_occup(progres = progres ,
 #'                                     ctr = "Ecuador",
 #'                                     ridl = "data-should-be-on-ridl",
@@ -380,8 +380,8 @@ return(p)
 
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-#' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_incl_work(progres = progres,
 #'                                     ctr = "Ecuador",
 #'                                     ridl = "data-should-be-on-ridl",

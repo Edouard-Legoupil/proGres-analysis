@@ -150,7 +150,8 @@ data_get <- function(ridldataset,
                                      folder = here::here(dataraw)) )
  ## get all the zip files and unzip them in the same folder
  filelist <- list.files(here::here(dataraw), pattern = ".zip", recursive = F)
- plyr::ldply(.data = here::here(dataraw,filelist), .fun = unzip, exdir = here::here(dataraw))
+ plyr::ldply(.data = here::here(dataraw,filelist), .fun = unzip,
+             exdir = here::here(dataraw))
 }
  
 ```
@@ -1039,7 +1040,7 @@ popdatactr <-   popdata::pd_asr("demographics", year = 2021)  %>%
 ```
 
 ```{r examples-data_recode }
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
 progres <- data_recode(progresobj = progresobj,
                        ctr = "Ecuador")
 
@@ -1191,8 +1192,8 @@ return(p)
 
 ```{r examples-plot_reach_registration, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_reach_registration (progres = progres , 
                          ctr = "Ecuador", 
                          ridl = "Ecuador",
@@ -1342,8 +1343,8 @@ p<- ggplot(data = pyramid_data1, aes(x = Age,
 
 ```{r examples-plot_reach_agepyr, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_reach_agepyr (progres = progres , 
                          ctr = "Ecuador", 
                          ridl = "data-should-be-on-ridl" ,
@@ -1472,8 +1473,8 @@ p <- RegistrationGroup |>
 
 
 ```{r examples-plot_reach_return, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_reach_return(progres  = progres , 
                          ctr = "Ecuador", 
                          ridl = "data-should-be-on-ridl" ,
@@ -1622,8 +1623,8 @@ return(p)
 
 
 ```{r examples-plot_incl_educ_enroll, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_incl_educ_enroll (progres = progres,
                                     ctr = "Ecuador" ,
                                     ridl = "data-should-be-on-ridl",
@@ -1783,8 +1784,8 @@ return(p)
 
 
 ```{r examples-plot_incl_educ_attain, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_incl_educ_attain(progres = progres,
                                     ctr = "Ecuador",
                                     ridl = "data-should-be-on-ridl",
@@ -1887,8 +1888,8 @@ return(p)
 
 ```{r examples-plot_incl_occup, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_incl_occup(progres = progres ,
                                     ctr = "Ecuador",
                                     ridl = "data-should-be-on-ridl",
@@ -1988,8 +1989,8 @@ plot_incl_work  <- function(progres,
 
 ```{r examples-plot_incl_work, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_incl_work(progres = progres,
                                     ctr = "Ecuador",
                                     ridl = "data-should-be-on-ridl",
@@ -2139,8 +2140,8 @@ p <- Individual |>
 
 ```{r examples-plot_prot_doc, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_prot_doc (progres = progres,
                                     ctr = "Ecuador",
                                     ridl = "data-should-be-on-ridl",
@@ -2342,8 +2343,8 @@ return(p)
 
 ```{r examples-plot_prot_ratio, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 
 plot_prot_ratio (progres = progres,
                                     ctr = "Ecuador",
@@ -2465,8 +2466,8 @@ p <- SpecificNeed |>
 
 ```{r examples-plot_prot_spneedcat, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_prot_spneedcat  (progres = progres,
                                     ctr = "Ecuador",
                                     ridl = "data-should-be-on-ridl",
@@ -2619,8 +2620,8 @@ return(p)
 
 ```{r examples-plot_prot_spneedass, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 
 plot_prot_spneedass (progres = progres,
                                     ctr = "Ecuador",
@@ -2769,14 +2770,14 @@ pclustprop <- ggplot(cluster, aes(x=clust)) +
 
 ```{r examples-plot_segment_var, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 cluster <- plot_segment_var(progres = progres,
                                     ctr = "Ecuador",
                                     ridl = "data-should-be-on-ridl",
                                     thisyear = 2021 )
 
-cluster[1]
+cluster[[1]]
 
 ```
 
@@ -2895,7 +2896,7 @@ return(p)
 
 ```{r examples-plot_segment_group, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
 # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 # plot_segment_group(progres = progres,
 #                                     ctr = "Ecuador",
@@ -3029,7 +3030,7 @@ return(p)
 
 ```{r examples-plot_assist_type, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
 # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_assist_type (progres = progres,
                                     ctr = "Ecuador",
@@ -3162,7 +3163,7 @@ return(p)
 
 ```{r examples-plot_assist_evol, fig.retina = 2, fig.width = 8, fig.asp = 0.618, fig.align = "center", dev = "ragg_png", out.width = "90%"}
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
 # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_assist_evol(progres = progres,
                                     ctr = "Ecuador",

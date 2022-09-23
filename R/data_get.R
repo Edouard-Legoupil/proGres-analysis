@@ -31,6 +31,7 @@ data_get <- function(ridldataset,
                                      folder = here::here(dataraw)) )
  ## get all the zip files and unzip them in the same folder
  filelist <- list.files(here::here(dataraw), pattern = ".zip", recursive = F)
- plyr::ldply(.data = here::here(dataraw,filelist), .fun = unzip, exdir = here::here(dataraw))
+ plyr::ldply(.data = here::here(dataraw,filelist), .fun = unzip,
+             exdir = here::here(dataraw))
 }
  

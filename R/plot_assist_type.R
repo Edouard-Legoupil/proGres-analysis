@@ -262,7 +262,7 @@ return(p)
 #'
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
 #' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_assist_evol(progres = progres,
 #'                                     ctr = "Ecuador",
@@ -506,7 +506,7 @@ return(p)
 
 #' @examples
 #' 
-#' # progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#' progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
 #' # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 #' plot_assist_type (progres = progres,
 #'                                     ctr = "Ecuador",
