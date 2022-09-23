@@ -36,7 +36,7 @@ The variable modalities in each of the profiles can be __interpreted__ using the
 }
 \examples{
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+#progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
 # progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 # plot_segment_group(progres = progres,
 #                                     ctr = "Ecuador",

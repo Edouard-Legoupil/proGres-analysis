@@ -31,13 +31,13 @@ The function compute a summary chart performing unsupervised classification on a
 }
 \examples{
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 cluster <- plot_segment_var(progres = progres,
                                     ctr = "Ecuador",
                                     ridl = "data-should-be-on-ridl",
                                     thisyear = 2021 )
 
-cluster[1]
+cluster[[1]]
 
 }

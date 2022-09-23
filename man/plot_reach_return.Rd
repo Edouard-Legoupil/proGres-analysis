@@ -27,8 +27,8 @@ a list with both a ggplot2 crafted chart and the summary data
 The function compute a summary chart
 }
 \examples{
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_reach_return(progres  = progres , 
                          ctr = "Ecuador", 
                          ridl = "data-should-be-on-ridl" ,

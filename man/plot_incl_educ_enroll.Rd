@@ -31,8 +31,8 @@ The function compute a summary chart
   * "SE.TER.ENRR" # School enrollment, tertiary -Age 20-24  (% gross)
 }
 \examples{
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_incl_educ_enroll (progres = progres,
                                     ctr = "Ecuador" ,
                                     ridl = "data-should-be-on-ridl",

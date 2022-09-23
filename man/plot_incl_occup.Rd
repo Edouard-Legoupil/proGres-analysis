@@ -28,8 +28,8 @@ The function compute a summary chart . Build with isco http://www.harryganzeboom
 }
 \examples{
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 plot_incl_occup(progres = progres ,
                                     ctr = "Ecuador",
                                     ridl = "data-should-be-on-ridl",

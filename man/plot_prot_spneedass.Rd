@@ -28,8 +28,8 @@ The function compute a summary chart
 }
 \examples{
 
-# progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
-# progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
+progresobj <- data_load(dataraw = system.file("demo/", package = "proGresAnalysis") )
+progres <- data_recode(progresobj = progresobj,  ctr = "Ecuador")
 
 plot_prot_spneedass (progres = progres,
                                     ctr = "Ecuador",
